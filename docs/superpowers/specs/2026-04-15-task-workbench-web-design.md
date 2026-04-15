@@ -471,8 +471,11 @@ Web 端任务卡分为两级。
 
 1. 复用当前项目已有页面结构和样式 token，而不是另起一套视觉体系
 2. 参考 `前端/web.html` 中已验证的主次分区模板
-3. 主动使用浏览器类 MCP 能力做真实页面验证
-4. 在现有 skill 足够时，优先使用现有 skills，而不是先安装新 skills
+3. 在进入 Web 前端设计与页面方案细化前，**必须使用** 全局前端设计 skills：
+   - `frontend-design`
+   - `web-artifacts-builder`
+4. 主动使用浏览器类 MCP 能力做真实页面验证
+5. 在现有 skill 足够时，优先使用现有 skills，而不是先安装新 skills
 
 ### 15.5 当前可用技能判断
 
@@ -480,6 +483,8 @@ Web 端任务卡分为两级。
 
 全局已可用且与本任务直接相关的能力包括：
 
+- `frontend-design`
+- `web-artifacts-builder`
 - `brainstorming`
 - `writing-plans`
 - `requesting-code-review`
@@ -490,13 +495,27 @@ Web 端任务卡分为两级。
 结论：
 
 - **当前已有 skill/MCP 组合足以支撑本轮 Web 前端改造**
+- 前端设计阶段默认要求前端 agent 使用 `frontend-design`
+- 当任务涉及复杂多组件页面、React/Tailwind/shadcn 风格 artifacts、复杂状态管理或需要构建可复用前端原型时，前端 agent 应同时评估并优先使用 `web-artifacts-builder`
 - 在进入实现前，不应默认拉取新的前端 skill 或 plugin
 - 只有在以下场景才考虑新增：
   - 现有浏览器验证能力不足
   - 现有前端实现模板无法覆盖需求
   - 新 skill/plugin 明显提升交付质量且能在项目内复用
 
-### 15.6 前端参考模板
+### 15.6 前端 skill 使用边界
+
+为避免执行时口径漂移，前端相关 skills 的使用边界定义如下：
+
+- `frontend-design`
+  - 用于页面结构设计、视觉方向选择、组件层级设计、HTML/CSS/JS 页面实现
+  - 本轮任务工作台 Web 改版属于其默认适用范围，**必须启用**
+- `web-artifacts-builder`
+  - 用于复杂多组件前端 artifacts，尤其是需要 React + TypeScript + Tailwind + shadcn/ui 组合时
+  - 若本轮实现继续维持现有单文件原型结构，则可以不切换整套 artifacts 栈
+  - 若后续决定将任务工作台升级为更强组件化的前端原型，则应优先采用该 skill 提供的模板与脚手架
+
+### 15.7 前端参考模板
 
 本轮 Web 端前端实现应优先参考：
 
