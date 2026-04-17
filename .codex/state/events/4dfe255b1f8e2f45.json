@@ -1,0 +1,49 @@
+{
+  "schema_version": "ops-event/v3",
+  "decision": "apply",
+  "reason": "本轮已定位并修复周视图 3+ 并发回归，更新了实现、测试口径和下一步主线，状态判断已实质变化。",
+  "summary": "恢复了日历周视图的 layered overlap 布局数学，修正了被测试固化的错误口径，并验证 3 个并发任务块重新按 100/75/50 叠放显示，同时将非 compact 重叠卡片改为标题优先展示。",
+  "dedupe_key": "4dfe255b1f8e2f45",
+  "event": {
+    "source": "ops-judge",
+    "intent": "修复日历周视图回归：3+ 并发任务块被压缩、并行块从 layered overlap 退回互斥分栏；参考本地项目 ilamy-calendar-main 的 overlap 方案。",
+    "result": "已在 app.js 的 getOverlapVisualMetrics 恢复 layered overlap 数学（2=>100/75，3=>100/75/50，4=>100/80/60/40，5+ offset 封顶 70），并对齐 calendar-layout/calendar-view-dom 测试预期；同时将重叠但非 compact 卡片改为标题优先，时间仅保留在 title/aria-label。npm test 指定 3 个测试文件共 45/45 通过，浏览器验收确认 3 个并发块宽度约 186.9/139.1/91.4 px，对应 100/75/50；先前 HANDOFF 中“2 lane layered / 3+ non-overlap”结论已过时。",
+    "focus": "下一步主线回到 4+ 并发降级策略，而不是继续处理这次 3+ 回归。",
+    "kb_pattern": "日历周视图重叠布局回归被实现与测试同时固化时，错误口径会在重构后持续自我强化。",
+    "kb_root_cause": "getOverlapVisualMetrics 对 laneCount>=3 直接返回 100/laneCount，导致 widthPercent<50 触发 compact，并把 layered overlap 退化为互斥分栏。",
+    "brief_append": "日历周视图已恢复参考项目式 layered overlap；3+ 并发不再采用 non-overlap 分栏，后续关注点转为 4+ 并发降级策略。",
+    "tags": [
+      "calendar",
+      "week-view",
+      "layout",
+      "regression",
+      "layered-overlap",
+      "tests"
+    ],
+    "next3": [
+      "评估并定义 4+ 并发任务块的降级展示策略与阈值。",
+      "基于当前 layered overlap 数学补充 4+ 并发场景的测试覆盖与验收口径。",
+      "更新项目状态结论，替换过时的“3+ non-overlap”记录。"
+    ],
+    "done_add": [
+      "修复 getOverlapVisualMetrics 对 3+ lane 的错误宽度计算，恢复 layered overlap。",
+      "修正 calendar-layout.test.js 与 calendar-view-dom.test.js 中被错误实现固化的预期。",
+      "完成重叠但非 compact 卡片的内容减载，改为标题优先展示。",
+      "通过测试与真浏览器 CSS 渲染双重验证确认回归已修复。"
+    ],
+    "notes": [
+      "当前真实实现已重新对齐参考项目式 layered overlap。",
+      "此前 state/HANDOFF 中关于“3+ non-overlap”的描述应视为过时。"
+    ],
+    "kb_fix": [
+      "按参考项目恢复基于 laneCount 的 layered overlap 宽度与偏移规则，而不是使用均分宽度。",
+      "同步修正测试预期，避免继续把错误布局当作正确行为。",
+      "对重叠但非 compact 卡片做内容减载，优先保留标题，避免文本拥挤。"
+    ],
+    "kb_precheck": [
+      "同时检查实现和测试是否共谋固化了错误视觉口径。",
+      "用 DOM/bounding box 实测宽度验证 100/75/50 等关键比例，而不是只看截图。",
+      "确认 compact 触发条件不会误伤 3 lane layered overlap 场景。"
+    ]
+  }
+}

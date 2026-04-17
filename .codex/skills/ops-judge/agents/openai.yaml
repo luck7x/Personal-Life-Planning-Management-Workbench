@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ops Judge"
+  short_description: "Explicitly judge one completed work round for state persistence."
+  default_prompt: "Use $ops-judge to classify one completed work round as ignore, defer, or apply."
+
+policy:
+  allow_implicit_invocation: false

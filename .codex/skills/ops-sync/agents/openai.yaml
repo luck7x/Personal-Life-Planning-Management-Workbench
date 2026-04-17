@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ops Sync"
+  short_description: "Explicitly run the judge-normalize-apply workflow for one completed work round."
+  default_prompt: "Use $ops-sync to judge, normalize, and, if needed, persist one completed work round."
+
+policy:
+  allow_implicit_invocation: false

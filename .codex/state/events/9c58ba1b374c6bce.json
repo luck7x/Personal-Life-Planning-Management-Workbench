@@ -1,0 +1,12 @@
+{
+  "schema_version": "ops-event/v3",
+  "decision": "apply",
+  "reason": "utf8-check",
+  "summary": "utf8-check",
+  "dedupe_key": "9c58ba1b374c6bce",
+  "event": {
+    "source": "ops-judge",
+    "intent": "验证中文路径 orchestrator",
+    "result": "apply 链路正常"
+  }
+}

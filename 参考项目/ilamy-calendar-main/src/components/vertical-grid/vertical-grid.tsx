@@ -1,0 +1,82 @@
+import type React from 'react'
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
+import { VerticalGridCol, type VerticalGridColProps } from './vertical-grid-col'
+import { VerticalGridHeaderContainer } from './vertical-grid-header-container'
+
+interface VerticalGridProps {
+	columns: VerticalGridColProps[]
+	children?: React.ReactNode
+	gridType?: 'day' | 'hour'
+	variant?: 'regular' | 'resource'
+	classes?: { header?: string; body?: string; allDay?: string }
+	allDayRow?: React.ReactNode
+	/**
+	 * Optional array of minute slots by which the hour is divided
+	 * e.g., [0, 15, 30, 45] for quarter-hour slots
+	 */
+	cellSlots?: number[]
+	style?: React.CSSProperties
+}
+
+export const VerticalGrid: React.FC<VerticalGridProps> = ({
+	columns,
+	children,
+	gridType = 'day',
+	variant = 'resource',
+	classes,
+	allDayRow,
+	cellSlots,
+	style,
+}) => {
+	const isResourceCalendar = variant === 'resource'
+	const isRegularCalendar = !isResourceCalendar
+
+	const header = children && (
+		<VerticalGridHeaderContainer
+			allDayRow={allDayRow}
+			classes={{ header: classes?.header, allDay: classes?.allDay }}
+		>
+			{children}
+		</VerticalGridHeaderContainer>
+	)
+
+	return (
+		<div
+			className="h-full flex flex-col"
+			data-testid="vertical-grid-container"
+			style={style}
+		>
+			{/* header row */}
+			{isRegularCalendar && header}
+
+			<ScrollArea
+				className={cn('h-full', isRegularCalendar && 'overflow-auto')}
+				data-testid="vertical-grid-scroll"
+				viewPortProps={{ className: '*:flex! *:flex-col! *:min-h-full' }}
+			>
+				{/* header row for resource calendar inside scroll area */}
+				{isResourceCalendar && header}
+				{/* Calendar area with scroll */}
+				<div
+					className={cn('flex flex-1 w-fit', classes?.body)}
+					data-testid="vertical-grid-body"
+				>
+					{/* Day columns with time slots */}
+					{columns.map((column, index) => (
+						<VerticalGridCol
+							key={`${column.id}-${index}`}
+							{...column}
+							cellSlots={cellSlots}
+							gridType={gridType}
+							isLastColumn={index === columns.length - 1}
+						/>
+					))}
+				</div>
+				<ScrollBar className="z-30" /> {/* vertical scrollbar */}
+				<ScrollBar className="z-30" orientation="horizontal" />{' '}
+				{/* horizontal scrollbar */}
+			</ScrollArea>
+		</div>
+	)
+}

@@ -1,0 +1,35 @@
+{
+  "decision": "apply",
+  "reason": "当前 Focus、Done、Next 3 与 Active Issues 已因高密度 overlap 第一轮修复而变化，需要写入状态。",
+  "summary": "已完成高密度 overlap 第一轮修复：保留 2 lane layered overlap，3+ lane 改为非重叠分栏，并增大日列最小宽度；全量测试与桌面/移动端浏览器复测通过。",
+  "event": {
+    "source": "ops-judge",
+    "intent": "在统一编辑完成后，吸收最终 QA/review/research 结论并完成 1.2 的高密度 overlap 第一轮修复。",
+    "result": "已把 3+ lane 从真实几何重叠切换为并排分栏，保留 2 lane layered overlap；更新测试与样式后 npm test 85/85 通过，桌面与 390px 移动端浏览器复测均无 pairwise overlap，编辑弹窗仍在视口内。",
+    "tags": ["calendar", "overlap", "qa", "research", "frontend"],
+    "focus": "继续完善日历周视图高密度场景；当前已完成 3+ 同时段块的第一轮去重叠修复，下一步转向 4+ 并发降级策略。",
+    "active_issues": [
+      "4+ 并发高密度场景仍缺少明确降级策略，后续需评估 +N 聚合、agenda/modal 展开，或移动端进一步降级。",
+      "research 结论提示：若未来继续追求高密度可读性，结构性方案应优先考虑 max stack / +N，而不是继续微调透明度。",
+      "未来若引入重复事件，仍需单独设计编辑作用范围（仅本次 / 本次及后续 / 整个系列）。"
+    ],
+    "next3": [
+      "基于当前 3+ 分栏结果，补 4+ 并发与极端窄屏场景的失败测试，明确何时进入 +N 或 agenda/modal 降级。",
+      "评估并设计高密度溢出策略的排序与交互规则，避免 4+ lane 继续压缩到不可读宽度。",
+      "在下一轮浏览器 QA 中补 4+ 并发桌面/移动端复测，验证降级方案与编辑入口共存。"
+    ],
+    "done_add": [
+      "吸收最终 QA/review/research 结论，确认当前真正问题是 3+ lane 高密度可读性而不是统一编辑链路。",
+      "将 getOverlapVisualMetrics 调整为 2 lane 保留 layered overlap、3+ lane 改为非重叠分栏。",
+      "将 calendar-week 日列最小宽度提高到 190px，配合现有横向滚动为 3+ 并发提供额外可读宽度。",
+      "更新 calendar-layout/calendar-view-dom/calendar-style-contract 测试并运行 npm test，全量 85 项通过。",
+      "完成桌面 1440px 与移动端 390px 浏览器复测：三条同时间段块均无 pairwise overlap，编辑弹窗仍完整位于视口内。",
+      "确认当前 overlap 修复不需要后端支持；它仍是纯前端布局与渲染层问题。"
+    ],
+    "notes": [
+      "review agent 将当前问题定义为真实几何 overlap 造成的可读性风险；qa agent补充指出旧 QA 的矩形相交规则过严，但在高密度场景下仍存在真实体验风险。主 agent 已采纳折中方案：2 lane 保留 layered overlap，3+ lane 改为并排分栏。",
+      "research agent 建议未来 4+ 密度优先考虑 eventMaxStack / +N / agenda-modal 这类结构性降级，而不是继续局部 CSS 微调。"
+    ],
+    "brief_append": "当前高密度 overlap 第一轮修复已完成：保留 2 lane layered overlap，3+ lane 改为非重叠分栏，并将后续主线收敛为 4+ 并发的 +N / agenda 等降级策略评估。"
+  }
+}

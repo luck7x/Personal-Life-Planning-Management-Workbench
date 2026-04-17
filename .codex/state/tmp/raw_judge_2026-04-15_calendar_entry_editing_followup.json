@@ -1,0 +1,25 @@
+{
+  "decision": "apply",
+  "reason": "审查发现已修复且新增浏览器 QA 结果，值得增量同步。",
+  "summary": "本轮吸收 code review 的两个有效问题并修复：已放弃 task 保存时继续要求放弃原因，统一编辑清空 manual 开始时间会提示正确错误信息；全量测试更新为 84/84 通过，并完成桌面/移动端浏览器 QA。",
+  "event": {
+    "source": "ops-judge",
+    "intent": "吸收 review findings 并补浏览器 QA 验证日历块统一编辑",
+    "result": "已修复 trash task 无放弃原因仍可保存的问题，以及 manual 统一编辑缺开始时间错误提示不准确的问题；npm test 全量 84 项通过；桌面端确认 manual 编辑与 task 删除正常，移动端确认 task 放弃正常且编辑弹窗按钮未超出视口。",
+    "tags": ["calendar", "editing", "review", "browser-qa", "ops-sync"],
+    "done_add": [
+      "修复已放弃 task 在统一编辑中可丢失放弃原因的问题",
+      "修复 unified manual edit 清空开始时间时的错误提示映射",
+      "运行 npm test，全量 84 项通过",
+      "完成桌面/移动端浏览器 QA，确认核心编辑链路与按钮布局正常"
+    ],
+    "active_issues": [
+      "qa agent 仍在后台运行，若返回新的视觉/交互问题需继续吸收",
+      "research 已建议未来若引入重复事件，必须单独设计作用范围策略（仅本次/本次及后续/整个系列）"
+    ],
+    "notes": [
+      "桌面端浏览器 QA：manual 编辑保存成功，task 删除后任务与日历投影同时消失",
+      "移动端浏览器 QA：task 放弃后状态变为 trash，放弃原因成功写回；modal 按钮组右边界未超出视口"
+    ]
+  }
+}

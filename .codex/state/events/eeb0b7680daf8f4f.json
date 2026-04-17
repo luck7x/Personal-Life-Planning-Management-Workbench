@@ -1,0 +1,49 @@
+{
+  "schema_version": "ops-event/v3",
+  "decision": "apply",
+  "reason": "本轮形成了新的可复用修复结论，并补齐了 ops-sync 中文路径链路与 now line/modal 层级问题的代码、测试和自动化验证。",
+  "summary": "修复了 ops-sync 在 Windows 中文路径下 normalize→apply 的 UTF-8 子进程输出链路，并通过提升 #modal-host stacking context 消除了 now line 红线压过编辑弹窗的问题；重新运行相关测试均通过。",
+  "dedupe_key": "eeb0b7680daf8f4f",
+  "event": {
+    "source": "ops-judge",
+    "intent": "修复 ops-sync 中文路径编码坑，并修正周视图编辑弹窗被 now line 红线压层的问题。",
+    "result": "已在 ops_sync_run.py 强制 normalize/apply 子进程使用 UTF-8 输出并补充中文路径回归测试；同时把 #modal-host 提升到独立 stacking context，相关自动化测试通过，真实浏览器专测留到下一步执行。",
+    "focus": "先完成编辑弹窗与 now line 的真实浏览器层级复测，再回到 4+ 并发降级策略主线。",
+    "kb_id": "KB-OPS-SYNC-WINDOWS-UTF8",
+    "kb_pattern": "Windows 中文项目路径下，Python orchestrator 跨 normalize→apply 传递 event_file 时可能因默认代码页导致路径乱码。",
+    "kb_root_cause": "ops_sync_run.py 未显式约束子进程编码链路；在 Windows 默认代码页环境里，capture_output/text 的解码结果会污染中文路径。",
+    "tags": [
+      "ops-sync",
+      "windows",
+      "utf8",
+      "calendar",
+      "modal",
+      "z-index",
+      "tests"
+    ],
+    "next3": [
+      "打开真实浏览器复测编辑“测试3”时的 modal/now line 层级。",
+      "评估并定义 4+ 并发任务块的降级展示策略与阈值。",
+      "基于当前 layered overlap 数学补充 4+ 并发场景的测试覆盖与验收口径。"
+    ],
+    "done_add": [
+      "修复 ops-sync orchestrator 在 Windows 中文路径下 normalize→apply 间的 UTF-8 输出链路。",
+      "为 ops_sync_run.py 补充中文路径回归测试，并在 SKILL.md 明确 Windows 中文路径约束。",
+      "提升 #modal-host 的 stacking context，修复 now line 红线压过编辑弹窗的层级问题。",
+      "重新运行 ops-sync 与日历相关自动化测试：python 单测通过，vitest 34/34 通过。"
+    ],
+    "notes": [
+      "此前 interaction-log 中“验证中文路径 orchestrator”仅是链路 smoke 记录，这一轮才是正式根因修复与状态同步。",
+      "红线压 modal 的问题当前已完成代码修复与自动化验证，真实浏览器专测仍需在下一步单独确认。"
+    ],
+    "kb_fix": [
+      "在 orchestrator 启动 normalize/apply 子进程时显式设置 PYTHONUTF8=1。",
+      "对子进程 stdout/stderr 统一使用 UTF-8 解码并在异常字节上 replace，而不是依赖系统代码页。",
+      "增加包含中文目录名的回归测试，直接校验 normalize.event_file 不含替换字符且后续 apply 成功。"
+    ],
+    "kb_precheck": [
+      "Windows 上凡是跨 Python 子进程传递文件路径的脚本，都要显式检查 UTF-8 链路。",
+      "回归测试至少覆盖一个真实中文路径项目根，不能只在 ASCII 临时目录里验证。"
+    ]
+  }
+}

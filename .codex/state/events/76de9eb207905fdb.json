@@ -1,0 +1,43 @@
+{
+  "schema_version": "ops-event/v3",
+  "decision": "apply",
+  "reason": "当前焦点和已完成结果已明确变化，且已形成可验证的代码与团队编排结论。",
+  "summary": "本轮将项目主焦点从周视图重叠优化切换到日历块统一编辑，已实现 manual/task 日历块的统一编辑、删除与 task 放弃动作，并通过全量 82 项测试；同时补充 agent team 注入规范文档并确认当前功能无需后端支持。",
+  "dedupe_key": "76de9eb207905fdb",
+  "event": {
+    "source": "ops-judge",
+    "intent": "实现点击日历块进入统一编辑，并建立当前会话的 agent team 注入规范",
+    "result": "已在 prototype-mvp 中实现日历块统一编辑链路，manual/task 都支持从日历块进入编辑；manual 支持保存/删除，task 支持保存/放弃/删除，且 task 时间修改会同步真实任务记录；新增团队注入协议文档，backend 评估确认当前功能前端本地闭环、后端为 N/A。",
+    "focus": "收尾日历块统一编辑功能，并吸收 review/qa/research team 的后续反馈",
+    "brief_append": "当前优先级已从周视图 overlap/截断提示切换为日历块统一编辑；task 日历块与真实任务记录保持一一对应，时间修改即修改真实任务记录。",
+    "tags": [
+      "calendar",
+      "editing",
+      "frontend",
+      "qa",
+      "agent-team",
+      "ops-sync"
+    ],
+    "next3": [
+      "汇总 research/review/qa agent 的回报，吸收必要修正或工具链建议",
+      "执行真实浏览器桌面/移动端 QA，确认编辑弹窗与动作按钮无重叠和溢出",
+      "在统一编辑稳定后，再决定是否回到 4+ overlap 与截断提示优化"
+    ],
+    "active_issues": [
+      "research/review/qa 并行回报仍在进行中，可能带来补充修正",
+      "前端 worker 的首次隔离 worktree 未包含真实实现目录，提示后续 team prompt 需显式绑定绝对源码路径"
+    ],
+    "done_add": [
+      "实现 manual/task 日历块统一编辑、删除与 task 放弃链路",
+      "补充并归并 calendar-view DOM 回归测试，覆盖 manual/task 的编辑、删除、放弃路径",
+      "运行 npm test，全量 82 项通过",
+      "新增 docs/agent-team-injection-protocol.md，固化当前 agent team 注入规范",
+      "backend 评估确认当前功能无需后端支持，task 日历块仍是 tasks 的投影"
+    ],
+    "notes": [
+      "当前代码工作目录仍是 .worktrees/self-supervision-mvp/prototype-mvp，而状态目录在仓库根 .codex/state",
+      "子 agent 若运行在独立 worktree 但真实源码位于绝对路径时，prompt 必须显式声明源码根，避免误判无文件",
+      "本轮验证证据为 npm test 全量 82/82 通过"
+    ]
+  }
+}

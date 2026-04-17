@@ -1,0 +1,7 @@
+interface:
+  display_name: "Ops Apply"
+  short_description: "Explicitly persist one validated ops event into project-local state files."
+  default_prompt: "Use $ops-apply to persist one validated ops event into the project-local .codex/state files."
+
+policy:
+  allow_implicit_invocation: false

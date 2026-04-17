@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pro Kanban - 极致体验完整版</title>
+    <style>
+        :root {
+            /* 极简通透色彩系统 */
+            --bg-app: #F8FAFC;
+            --bg-sidebar: #FFFFFF;
+            --border-light: #E2E8F0;
+
+            --text-main: #1E293B;
+            --text-sub: #64748B;
+
+            --c-memo: #D97706;
+            --c-todo: #2563EB;
+            --c-doing: #7C3AED;
+            --c-done: #059669;
+            --c-overdue: #DC2626;
+            --c-trash: #475569;
+
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-float: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 10px 20px -3px rgba(0, 0, 0, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* --- 明显的自定义滚动条 --- */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+
+        /* --- 左侧侧边栏 --- */
+        .sidebar {
+            width: 320px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-light);
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+            gap: 20px;
+            z-index: 10;
+        }
+
+        .brand {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .side-zone {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+            min-height: 150px;
+            overflow: hidden;
+        }
+
+        .side-header {
+            color: var(--text-sub);
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            padding-bottom: 8px;
+            flex-shrink: 0;
+        }
+
+        .side-count {
+            background: #F1F5F9;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+
+        .side-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-right: 4px;
+        }
+
+        /* 侧边栏卡片 */
+        .card-compact {
+            background: #FFFFFF;
+            border: 1px solid var(--border-light);
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            cursor: grab;
+            transition: 0.2s;
+            border-left: 3px solid transparent;
+            flex-shrink: 0;
+        }
+
+        .card-compact:hover {
+            border-color: #CBD5E1;
+            box-shadow: var(--shadow-float);
+        }
+
+        .zone-memo .card-compact {
+            border-left-color: var(--c-memo);
+        }
+
+        /* 逾期与垃圾篓卡片特殊状态 */
+        .zone-overdue .card-compact {
+            border-left-color: var(--c-overdue);
+            background: #FEF2F2;
+            border-color: #FECACA;
+        }
+
+        .zone-trash .card-compact {
+            opacity: 0.7;
+            background: #F8FAFC;
+        }
+
+        /* --- 右侧主工作区 --- */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 40px;
+        }
+
+        .topbar {
+            height: 90px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .mock-btn {
+            background: #FFFFFF;
+            color: var(--text-main);
+            border: 1px solid var(--border-light);
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .mock-btn:hover {
+            border-color: var(--c-todo);
+            color: var(--c-todo);
+        }
+
+        /* 看板核心区 */
+        .kanban-core {
+            flex: 1;
+            display: flex;
+            gap: 24px;
+            padding-bottom: 30px;
+            min-height: 0;
+        }
+
+        .column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            transition: 0.2s;
+        }
+
+        .column.drag-over .task-list {
+            background: rgba(0, 0, 0, 0.02);
+            border-radius: var(--radius-md);
+        }
+
+        .col-header {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .col-todo .indicator {
+            background: var(--c-todo);
+        }
+
+        .col-doing .indicator {
+            background: var(--c-doing);
+            box-shadow: 0 0 8px rgba(124, 58, 237, 0.4);
+        }
+
+        .col-done .indicator {
+            background: var(--c-done);
+        }
+
+        /* 任务列表滚动区 */
+        .task-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding-right: 4px;
+            transition: background 0.2s;
+        }
+
+        /* 统一的虚线占位符，保持三个列高度绝对水平对齐 */
+        .task-list:empty::after,
+        .side-list:empty::after {
+            content: "✨ 拖拽任务至此";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 90px;
+            flex-shrink: 0;
+            border: 2px dashed #CBD5E1;
+            border-radius: var(--radius-sm);
+            color: #94A3B8;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .side-list:empty::after {
+            height: 70px;
+            font-size: 12px;
+        }
+
+        /* --- 幽灵输入框 (置于底部) --- */
+        .add-input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px dashed #CBD5E1;
+            /* 默认虚线，像是一个按钮 */
+            border-radius: var(--radius-sm);
+            font-size: 13px;
+            outline: none;
+            transition: all 0.2s;
+            margin-top: 12px;
+            background: transparent;
+            color: var(--text-main);
+            flex-shrink: 0;
+        }
+
+        .add-input::placeholder {
+            color: #94A3B8;
+        }
+
+        .add-input:focus {
+            border-style: solid;
+            border-color: var(--c-todo);
+            background: #FFFFFF;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+            transform: translateY(-1px);
+        }
+
+        /* 主卡片 */
+        .card-main {
+            background: #FFFFFF;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-float);
+            cursor: grab;
+            transition: all 0.2s;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+
+        .card-main:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateY(-2px);
+            border-color: var(--border-light);
+        }
+
+        .card-main.dragging,
+        .card-compact.dragging {
+            opacity: 0.4;
+            transform: scale(0.95);
+            z-index: 100;
+        }
+
+        .card-title {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+            word-break: break-all;
+        }
+
+        .col-done .card-title {
+            text-decoration: line-through;
+            color: #94A3B8;
+        }
+
+        /* 日期时间标签 (动态显示) */
+        .task-meta {
+            font-size: 11px;
+            color: #94A3B8;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .zone-overdue .task-meta {
+            color: var(--c-overdue);
+            font-weight: 500;
+        }
+
+        .zone-trash .task-meta {
+            color: var(--c-trash);
+        }
+
+        /* 按钮组 */
+        .actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
+
+        .btn {
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: 0.2s;
+            background: #F1F5F9;
+            color: var(--text-sub);
+        }
+
+        .btn:hover {
+            background: #E2E8F0;
+            color: var(--text-main);
+        }
+
+        .btn-primary {
+            color: var(--c-todo);
+            background: #EFF6FF;
+        }
+
+        .btn-primary:hover {
+            background: #DBEAFE;
+        }
+
+        .btn-success {
+            color: var(--c-done);
+            background: #ECFDF5;
+        }
+
+        .btn-success:hover {
+            background: #D1FAE5;
+        }
+
+        .btn-danger {
+            color: var(--c-overdue);
+            background: #FEF2F2;
+        }
+
+        .btn-danger:hover {
+            background: #FEE2E2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 侧边栏：备忘与回收 -->
+    <div class="sidebar">
+        <div class="brand">✨ Pro Kanban</div>
+
+        <div class="side-zone drop-zone zone-memo" data-status="memo">
+            <div class="side-header"><span>📝 备忘池</span><span class="side-count" id="count-memo">0</span></div>
+            <!-- 列表居中，输入框垫底 -->
+            <div class="side-list" id="list-memo"></div>
+            <input type="text" class="add-input" placeholder="+ 添加灵感并回车..." onkeypress="handleAddTask(event, 'memo')">
+        </div>
+
+        <div class="side-zone drop-zone zone-overdue" data-status="overdue">
+            <div class="side-header"><span style="color:var(--c-overdue)">⚠️ 逾期警示</span><span class="side-count"
+                    id="count-overdue">0</span></div>
+            <div class="side-list" id="list-overdue"></div>
+        </div>
+
+        <div class="side-zone drop-zone zone-trash" data-status="trash">
+            <div class="side-header"><span>🗑️ 垃圾篓</span><span class="side-count" id="count-trash">0</span></div>
+            <div class="side-list" id="list-trash"></div>
+        </div>
+    </div>
+
+    <!-- 右侧：主看版 -->
+    <div class="main-content">
+        <div class="topbar">
+            <div class="page-title">工作台</div>
+            <button class="mock-btn" onclick="mockMidnight()">⏰ 模拟午夜流转</button>
+        </div>
+
+        <div class="kanban-core">
+            <div class="column col-todo drop-zone" data-status="todo">
+                <div class="col-header">
+                    <div class="indicator"></div> 待办 Todo
+                </div>
+                <!-- 列表居中，输入框垫底 -->
+                <div class="task-list" id="list-todo"></div>
+                <input type="text" class="add-input" placeholder="+ 添加待办任务..."
+                    onkeypress="handleAddTask(event, 'todo')">
+            </div>
+
+            <div class="column col-doing drop-zone" data-status="doing">
+                <div class="col-header">
+                    <div class="indicator"></div> 进行中 Doing
+                </div>
+                <div class="task-list" id="list-doing"></div>
+            </div>
+
+            <div class="column col-done drop-zone" data-status="done">
+                <div class="col-header">
+                    <div class="indicator"></div> 已完成 Done
+                </div>
+                <div class="task-list" id="list-done"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取今日日期 YYYY-MM-DD
+        function getTodayDate() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        // 初始化数据，带上日期戳
+        let tasks = JSON.parse(localStorage.getItem('pro_tasks_v5')) || [
+            { id: '1', text: '彻底修复对齐问题，输入框变为底部幽灵形态', status: 'todo', prevStatus: null, date: getTodayDate() },
+            { id: '2', text: '试试在下方输入框回车，任务会自然出现在底部', status: 'todo', prevStatus: null, date: getTodayDate() },
+            { id: '3', text: '拖拽清空此列，看看整齐的虚线框', status: 'doing', prevStatus: null, date: getTodayDate() },
+            { id: '4', text: '这是一个已逾期的任务案例', status: 'overdue', prevStatus: null, date: '2023-10-20' }
+        ];
+
+        function renderBoard(scrollToBottom = false) {
+            const zones = ['memo', 'todo', 'doing', 'done', 'overdue', 'trash'];
+
+            // 清空列表，更新计数
+            zones.forEach(status => {
+                const list = document.getElementById(`list-${status}`);
+                list.innerHTML = '';
+                document.getElementById(`count-${status}`).innerText = tasks.filter(t => t.status === status).length;
+            });
+
+            // 渲染卡片 (依数组顺序添加，最新追加的自然在最下方)
+            tasks.forEach(task => {
+                const listEl = document.getElementById(`list-${task.status}`);
+                if (listEl) listEl.appendChild(createCard(task));
+            });
+
+            localStorage.setItem('pro_tasks_v5', JSON.stringify(tasks));
+
+            // 自动滚动到底部逻辑
+            if (scrollToBottom) {
+                setTimeout(() => {
+                    document.querySelectorAll('.task-list, .side-list').forEach(list => {
+                        list.scrollTop = list.scrollHeight;
+                    });
+                }, 50);
+            }
+        }
+
+        function createCard(task) {
+            const isSidebar = ['memo', 'overdue', 'trash'].includes(task.status);
+            const card = document.createElement('div');
+            card.className = isSidebar ? 'card-compact' : 'card-main';
+            card.draggable = true;
+            card.dataset.id = task.id;
+
+            card.addEventListener('dragstart', handleDragStart);
+            card.addEventListener('dragend', handleDragEnd);
+
+            let btns = '';
+            const s = task.status;
+
+            // 根据状态渲染不同的按钮组合
+            if (s === 'memo') {
+                btns = `<button class="btn btn-primary" onclick="updateStatus('${task.id}', 'todo')">➡ 入列</button>
+                        <button class="btn btn-danger" onclick="moveToTrash('${task.id}')">删除</button>`;
+            } else if (s === 'overdue') {
+                btns = `<button class="btn btn-primary" onclick="updateStatus('${task.id}', 'todo')">🔄 激活</button>
+                        <button class="btn btn-danger" onclick="moveToTrash('${task.id}')">删除</button>`;
+            } else if (s === 'trash') {
+                btns = `<button class="btn btn-success" onclick="restoreTask('${task.id}')">♻️ 恢复</button>
+                        <button class="btn btn-danger" onclick="deletePermanent('${task.id}')">销毁</button>`;
+            } else if (s === 'todo') {
+                btns = `<button class="btn btn-primary" onclick="updateStatus('${task.id}', 'doing')">▶ 开始</button>
+                        <button class="btn btn-success" onclick="updateStatus('${task.id}', 'done')">✔ 完成</button>
+                        <button class="btn" onclick="moveToTrash('${task.id}')">🗑️</button>`;
+            } else if (s === 'doing') {
+                btns = `<button class="btn btn-success" onclick="updateStatus('${task.id}', 'done')">✔ 完成</button>
+                        <button class="btn btn-danger" onclick="moveToTrash('${task.id}')">放弃</button>`;
+            } else if (s === 'done') {
+                btns = `<button class="btn" onclick="moveToTrash('${task.id}')">🗑️ 删除</button>`;
+            }
+
+            // 拼装卡片内部 DOM
+            card.innerHTML = `
+                <div class="card-title">${task.text}</div>
+                <div class="task-meta">📅 ${task.date || getTodayDate()}</div>
+                <div class="actions">${btns}</div>
+            `;
+            return card;
+        }
+
+        // --- 业务交互 ---
+        function handleAddTask(e, status) {
+            if (e.key === 'Enter' && e.target.value.trim() !== '') {
+                tasks.push({
+                    id: Date.now().toString(),
+                    text: e.target.value.trim(),
+                    status: status,
+                    prevStatus: null,
+                    date: getTodayDate()
+                });
+                e.target.value = ''; // 清空输入框
+                e.target.blur(); // 敲击回车后自动失焦，恢复幽灵按钮形态
+                renderBoard(true); // 强制定位到底部
+            }
+        }
+
+        function updateStatus(id, newStatus) {
+            const t = tasks.find(x => x.id === id);
+            if (t) { t.prevStatus = t.status; t.status = newStatus; renderBoard(true); }
+        }
+
+        function moveToTrash(id) {
+            const t = tasks.find(x => x.id === id);
+            if (t) { t.prevStatus = t.status; t.status = 'trash'; renderBoard(true); }
+        }
+
+        function restoreTask(id) {
+            const t = tasks.find(x => x.id === id);
+            if (t) { t.status = (t.prevStatus === 'memo') ? 'memo' : 'todo'; renderBoard(true); }
+        }
+
+        function deletePermanent(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            renderBoard();
+        }
+
+        function mockMidnight() {
+            let moved = false;
+            tasks.forEach(t => {
+                if (t.status === 'todo') { t.prevStatus = 'todo'; t.status = 'overdue'; moved = true; }
+            });
+            if (moved) renderBoard(true);
+        }
+
+        // --- 全局丝滑拖拽引擎 ---
+        let draggedTaskId = null;
+
+        function handleDragStart(e) {
+            draggedTaskId = this.dataset.id;
+            this.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', draggedTaskId);
+        }
+
+        function handleDragEnd() {
+            this.classList.remove('dragging');
+            document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+        }
+
+        document.querySelectorAll('.drop-zone').forEach(zone => {
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (!zone.classList.contains('drag-over')) {
+                    document.querySelectorAll('.drop-zone').forEach(z => z.classList.remove('drag-over'));
+                    zone.classList.add('drag-over');
+                }
+            });
+
+            zone.addEventListener('dragleave', (e) => {
+                if (!zone.contains(e.relatedTarget)) {
+                    zone.classList.remove('drag-over');
+                }
+            });
+
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const newStatus = zone.dataset.status;
+
+                if (draggedTaskId) {
+                    const task = tasks.find(t => t.id === draggedTaskId);
+                    if (task && task.status !== newStatus) {
+                        task.prevStatus = task.status; // 跨区拖拽时也要记录前置状态
+                        task.status = newStatus;
+                        renderBoard(true);
+                    }
+                }
+            });
+        });
+
+        // 初始装载数据并渲染
+        renderBoard(true);
+    </script>
+</body>
+
+</html>
