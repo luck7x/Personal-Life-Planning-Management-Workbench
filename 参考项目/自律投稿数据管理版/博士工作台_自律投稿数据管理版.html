@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PhD Master Workspace · 综合版</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            dopamine: {
+              orange: '#FF8C42',
+              pink: '#FF6B8B',
+              yellow: '#F9C74F',
+              mint: '#43AA8B',
+              sky: '#4D9DE0',
+              purple: '#9B5DE5',
+              coral: '#F48C6E',
+              lime: '#A7C957'
+            },
+            calm: {
+              blue: '#9fbcdb',
+              lilac: '#bbaecc',
+              peach: '#eecba8',
+              green: '#a6cbb5',
+              sand: '#ebd59a',
+              rose: '#e0a2a2',
+              ink: '#4a4a59',
+              mute: '#8e8e9e',
+              bg: '#f7f8fb'
+            }
+          },
+          boxShadow: {
+            soft: '0 12px 30px -12px rgba(0,0,0,.12)',
+            floaty: '0 18px 40px -18px rgba(0,0,0,.18)'
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: linear-gradient(145deg, #fff8ef 0%, #f8fbff 55%, #fff6fb 100%);
+      min-height: 100vh;
+    }
+    .soft-card {
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,.7);
+      border-radius: 1.5rem;
+      box-shadow: 0 18px 45px -22px rgba(0,0,0,.18);
+    }
+    .nav-btn.active {
+      background: linear-gradient(90deg, #FF8C42, #FF6B8B);
+      color: white;
+      box-shadow: 0 10px 20px -10px rgba(255,107,139,.55);
+    }
+    .nav-btn { transition: all .2s ease; }
+    .nav-btn:hover { transform: translateY(-1px); }
+    .section { display: none; }
+    .section.active { display: block; }
+    .mood-emoji { transition: transform .18s ease, filter .18s ease; cursor: pointer; }
+    .mood-emoji:hover, .mood-emoji.active { transform: scale(1.16); filter: drop-shadow(0 4px 8px rgba(0,0,0,.15)); }
+    .mini-badge { border-radius: 999px; padding: .15rem .6rem; font-size: .72rem; font-weight: 700; }
+    .kanban-col { min-height: 220px; }
+    .calendar-cell { min-height: 88px; }
+    .dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+    .pulse-ring { animation: pulseRing 1.6s infinite; }
+    @keyframes pulseRing {
+      0% { box-shadow: 0 0 0 0 rgba(67,170,139,.35); }
+      70% { box-shadow: 0 0 0 10px rgba(67,170,139,0); }
+      100% { box-shadow: 0 0 0 0 rgba(67,170,139,0); }
+    }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,140,66,.4); border-radius: 999px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,.6); }
+
+    .record-action-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 80;
+      padding: 1rem;
+    }
+    .record-action-overlay.show { display: flex; }
+    .record-action-card {
+      width: min(92vw, 380px);
+      background: rgba(255,255,255,0.96);
+      border: 1px solid rgba(255,255,255,0.8);
+      border-radius: 1.5rem;
+      box-shadow: 0 24px 60px rgba(15,23,42,0.18);
+      overflow: hidden;
+    }
+    .record-action-btn {
+      width: 100%;
+      text-align: left;
+      padding: 0.95rem 1rem;
+      border-radius: 1rem;
+      font-weight: 800;
+      transition: .15s ease;
+      border: 1px solid transparent;
+    }
+    .record-action-btn:hover { transform: translateY(-1px); }
+
+    .time-week-shell {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 340px;
+      gap: 1rem;
+      align-items: start;
+    }
+    .time-week-main,
+    .time-week-panel,
+    .time-week-form {
+      background: rgba(255,255,255,.76);
+      border: 1px solid rgba(255,255,255,.82);
+      box-shadow: 0 22px 60px -34px rgba(49,54,92,.42);
+      backdrop-filter: blur(18px);
+    }
+    .time-week-main {
+      border-radius: 24px;
+      overflow: hidden;
+    }
+    .time-week-toolbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+      padding: 1.1rem 1.2rem;
+      background: linear-gradient(135deg, rgba(241,250,244,.9), rgba(247,242,255,.82));
+      border-bottom: 1px solid rgba(255,255,255,.72);
+    }
+    .time-week-kicker {
+      color: #667085;
+      font-size: .72rem;
+      font-weight: 900;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+    .time-week-title {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      margin-top: .22rem;
+      font-size: 1.45rem;
+      line-height: 1.2;
+      font-weight: 950;
+      color: #22223b;
+    }
+    .time-week-actions,
+    .time-week-timer-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: .55rem;
+    }
+    .time-week-icon-btn,
+    .time-week-pill-btn,
+    .time-week-primary-btn {
+      min-height: 2.45rem;
+      border-radius: 999px;
+      font-weight: 900;
+      transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
+    }
+    .time-week-icon-btn {
+      width: 2.45rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,.86);
+      color: #454064;
+      border: 1px solid rgba(211,215,226,.9);
+    }
+    .time-week-pill-btn {
+      padding: 0 .95rem;
+      background: rgba(255,255,255,.86);
+      color: #454064;
+      border: 1px solid rgba(211,215,226,.9);
+    }
+    .time-week-primary-btn {
+      padding: 0 1rem;
+      color: white;
+      background: linear-gradient(135deg, #43aa8b, #7d5fff);
+      box-shadow: 0 12px 28px -16px rgba(75, 72, 182, .7);
+    }
+    .time-week-icon-btn:hover,
+    .time-week-pill-btn:hover,
+    .time-week-primary-btn:hover {
+      transform: translateY(-1px);
+    }
+    .time-week-primary-btn:disabled,
+    .time-week-pill-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    .time-week-grid {
+      overflow-x: auto;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.72), rgba(250,252,255,.92)),
+        radial-gradient(circle at 14% 8%, rgba(67,170,139,.12), transparent 32%);
+    }
+    .time-week-grid-head {
+      min-width: 920px;
+      display: grid;
+      grid-template-columns: 62px repeat(7, minmax(112px, 1fr));
+      border-bottom: 1px solid rgba(221,226,236,.8);
+      background: rgba(255,255,255,.72);
+      position: sticky;
+      top: 0;
+      z-index: 4;
+    }
+    .time-week-head-spacer {
+      border-right: 1px solid rgba(221,226,236,.8);
+    }
+    .time-week-day-head {
+      appearance: none;
+      padding: .8rem .7rem;
+      text-align: left;
+      border-right: 1px solid rgba(221,226,236,.65);
+      border-top: 0;
+      border-bottom: 0;
+      border-left: 0;
+      background: transparent;
+      color: #3b3c52;
+    }
+    .time-week-day-head:last-child {
+      border-right: 0;
+    }
+    .time-week-day-head strong {
+      display: block;
+      font-size: .92rem;
+      line-height: 1.15;
+    }
+    .time-week-day-head span {
+      display: block;
+      margin-top: .15rem;
+      color: #7a8191;
+      font-size: .72rem;
+      font-weight: 800;
+    }
+    .time-week-day-head.time-week-today,
+    .time-week-day-head.time-week-selected {
+      background: rgba(67,170,139,.12);
+      box-shadow: inset 0 -3px 0 rgba(67,170,139,.55);
+    }
+    .time-week-day-head.time-week-weekend span {
+      color: #b26a75;
+    }
+    .time-week-grid-body {
+      min-width: 920px;
+      display: grid;
+      grid-template-columns: 62px repeat(7, minmax(112px, 1fr));
+      min-height: 960px;
+      position: relative;
+    }
+    .time-week-time-axis {
+      position: relative;
+      border-right: 1px solid rgba(221,226,236,.8);
+      background: rgba(255,255,255,.58);
+    }
+    .time-week-hour {
+      position: absolute;
+      left: 0;
+      right: .55rem;
+      transform: translateY(-50%);
+      text-align: right;
+      color: #8a92a3;
+      font-size: .7rem;
+      font-weight: 800;
+    }
+    .time-week-day-col {
+      appearance: none;
+      display: block;
+      position: relative;
+      min-height: 960px;
+      border-right: 1px solid rgba(221,226,236,.65);
+      border-top: 0;
+      border-bottom: 0;
+      border-left: 0;
+      padding: 0;
+      text-align: left;
+      background-image: linear-gradient(to bottom, rgba(103,112,138,.13) 1px, transparent 1px);
+      background-size: 100% 60px;
+    }
+    .time-week-day-col:last-child {
+      border-right: 0;
+    }
+    .time-week-day-col.time-week-selected {
+      background-color: rgba(125,95,255,.055);
+    }
+    .time-week-now-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: #ff6b8b;
+      z-index: 3;
+      box-shadow: 0 0 0 3px rgba(255,107,139,.12);
+    }
+    .time-week-block {
+      appearance: none;
+      text-align: left;
+      position: absolute;
+      z-index: 2;
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.86);
+      padding: .5rem .55rem;
+      color: #22223b;
+      box-shadow: 0 10px 26px -20px rgba(25,30,55,.55);
+      cursor: pointer;
+    }
+    .time-week-block-title {
+      font-size: .78rem;
+      line-height: 1.15;
+      font-weight: 950;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .time-week-block-meta {
+      margin-top: .16rem;
+      font-size: .66rem;
+      line-height: 1.15;
+      color: rgba(34,34,59,.7);
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .time-week-block.time-week-compact {
+      padding: .3rem .45rem;
+      border-radius: 10px;
+    }
+    .time-week-block.time-week-compact .time-week-block-meta {
+      display: none;
+    }
+    .time-week-side {
+      display: grid;
+      gap: 1rem;
+    }
+    .time-week-panel {
+      border-radius: 22px;
+      padding: 1rem;
+    }
+    .time-week-panel-label {
+      color: #7a8191;
+      font-size: .68rem;
+      font-weight: 950;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+    .time-week-panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: flex-start;
+      margin-bottom: .85rem;
+    }
+    .time-week-panel-header h3 {
+      margin-top: .12rem;
+      font-size: 1.05rem;
+      font-weight: 950;
+      color: #22223b;
+    }
+    .time-week-timer-ring {
+      width: 190px;
+      height: 190px;
+      margin: 1rem auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle, rgba(255,255,255,.95) 0 58%, transparent 59%),
+        conic-gradient(from 210deg, #43aa8b, #7d5fff, #ff6b8b, #43aa8b);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.7), 0 18px 38px -28px rgba(34,34,59,.8);
+    }
+    .time-week-timer-ring.time-week-active {
+      animation: timeWeekGlow 1.8s ease-in-out infinite;
+    }
+    @keyframes timeWeekGlow {
+      0%, 100% { filter: saturate(1); }
+      50% { filter: saturate(1.18) brightness(1.04); }
+    }
+    .time-week-timer-value {
+      color: #22223b;
+      font-size: 1.8rem;
+      line-height: 1;
+      font-weight: 950;
+    }
+    .time-week-timer-task {
+      width: 128px;
+      margin: .45rem auto 0;
+      color: #667085;
+      font-size: .76rem;
+      line-height: 1.25;
+      font-weight: 800;
+    }
+    .time-week-stat-list,
+    .time-week-detail-list {
+      display: grid;
+      gap: .55rem;
+    }
+    .time-week-stat-row,
+    .time-week-detail-item,
+    .time-week-empty {
+      border-radius: 14px;
+      background: rgba(255,255,255,.72);
+      border: 1px solid rgba(226,230,240,.82);
+      padding: .72rem .8rem;
+    }
+    .time-week-stat-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: .7rem;
+      align-items: center;
+    }
+    .time-week-stat-name,
+    .time-week-detail-title {
+      color: #22223b;
+      font-size: .86rem;
+      line-height: 1.25;
+      font-weight: 950;
+    }
+    .time-week-stat-bar {
+      grid-column: 1 / -1;
+      height: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(226,230,240,.95);
+    }
+    .time-week-stat-bar span {
+      display: block;
+      height: 100%;
+      border-radius: inherit;
+    }
+    .time-week-detail-meta,
+    .time-week-empty {
+      color: #7a8191;
+      font-size: .75rem;
+      line-height: 1.35;
+      font-weight: 750;
+    }
+    .time-week-detail-item.time-week-deadline {
+      border-color: rgba(255,107,139,.18);
+      background: rgba(255,246,248,.74);
+    }
+    .time-week-form {
+      margin-top: 1rem;
+      border-radius: 22px;
+      padding: 1rem;
+    }
+    .time-week-form[hidden] {
+      display: none;
+    }
+    .time-week-form-grid {
+      display: grid;
+      grid-template-columns: 1.05fr .8fr .8fr 1fr;
+      gap: .7rem;
+      align-items: stretch;
+    }
+    .time-week-input {
+      min-height: 2.7rem;
+      border-radius: 14px;
+      border: 1px solid rgba(210,216,229,.95);
+      background: rgba(255,255,255,.92);
+      padding: .65rem .85rem;
+      color: #22223b;
+      font-weight: 800;
+      outline: none;
+    }
+    .time-week-input:focus {
+      box-shadow: 0 0 0 3px rgba(67,170,139,.16);
+      border-color: rgba(67,170,139,.55);
+    }
+    .time-week-form-title {
+      grid-column: span 2;
+    }
+    .time-week-form-notes {
+      grid-column: span 2;
+      resize: none;
+    }
+
+    @media (max-width: 1180px) {
+      .time-week-shell {
+        grid-template-columns: 1fr;
+      }
+      .time-week-side {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .time-week-timer-ring {
+        width: 150px;
+        height: 150px;
+      }
+      .time-week-timer-value {
+        font-size: 1.45rem;
+      }
+    }
+    @media (max-width: 760px) {
+      .time-week-toolbar,
+      .time-week-actions,
+      .time-week-timer-actions {
+        align-items: stretch;
+      }
+      .time-week-toolbar {
+        flex-direction: column;
+      }
+      .time-week-actions {
+        width: 100%;
+      }
+      .time-week-primary-btn,
+      .time-week-pill-btn {
+        flex: 1;
+      }
+      .time-week-side,
+      .time-week-form-grid {
+        grid-template-columns: 1fr;
+      }
+      .time-week-form-title,
+      .time-week-form-notes {
+        grid-column: auto;
+      }
+    }
+
+  </style>
+</head>
+<body class="font-sans text-calm-ink">
+  <div class="max-w-[1600px] mx-auto px-4 py-6 lg:px-6">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <aside class="lg:col-span-3 xl:col-span-2">
+        <div class="soft-card p-5 sticky top-4">
+          <div class="mb-6">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-dopamine-orange to-dopamine-pink text-white flex items-center justify-center shadow-soft">
+                <i class="fa-solid fa-graduation-cap text-xl"></i>
+              </div>
+              <div>
+                <h1 class="text-xl font-black tracking-tight bg-gradient-to-r from-dopamine-orange to-dopamine-pink bg-clip-text text-transparent">PhD Master Workspace</h1>
+                <p class="text-xs text-calm-mute">整合版 · 自律 / 科研 / 投稿</p>
+              </div>
+            </div>
+            <div id="currentDateTime" class="text-sm text-calm-mute bg-orange-50 rounded-xl px-3 py-2 border border-orange-100"></div>
+          </div>
+
+          <nav class="space-y-2">
+            <button class="nav-btn active w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center justify-between" data-target="dashboard-section"><span>总览首页</span><i class="fa-solid fa-house"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="attendance-section"><span>起居与考勤</span><i class="fa-regular fa-clock"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="calendar-section"><span>时间块日历</span><i class="fa-regular fa-calendar"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="focus-section"><span>专注与任务</span><i class="fa-solid fa-bullseye"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="lifestyle-section"><span>习惯与饮食</span><i class="fa-solid fa-leaf"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="mind-section"><span>情绪与观心</span><i class="fa-regular fa-heart"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="phone-section"><span>手机克制与成就</span><i class="fa-solid fa-shield-heart"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="submission-section"><span>投稿管理</span><i class="fa-regular fa-paper-plane"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="settings-section"><span>设置 / 数据管理</span><i class="fa-solid fa-database"></i></button>
+            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="analytics-section"><span>数据看板</span><i class="fa-solid fa-chart-line"></i></button>
+          </nav>
+
+          <div class="mt-6 border-t border-gray-100 pt-5">
+            <h3 class="text-xs tracking-[0.2em] uppercase text-calm-mute font-black mb-3">今日快照</h3>
+            <div class="space-y-2 text-sm">
+              <div class="flex justify-between"><span class="text-calm-mute">专注时长</span><span id="sbFocus" class="font-bold text-dopamine-orange">0 分钟</span></div>
+              <div class="flex justify-between"><span class="text-calm-mute">进行中任务</span><span id="sbTask" class="font-bold truncate max-w-[120px]">无</span></div>
+              <div class="flex justify-between"><span class="text-calm-mute">手机克制</span><span id="sbPhone" class="font-bold text-dopamine-purple">0 次</span></div>
+              <div class="flex justify-between"><span class="text-calm-mute">习惯完成度</span><span id="sbHabit" class="font-bold text-dopamine-mint">0%</span></div>
+              <div class="flex justify-between"><span class="text-calm-mute">投稿进行中</span><span id="sbSubmissions" class="font-bold text-dopamine-sky">0</span></div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="lg:col-span-9 xl:col-span-10 space-y-6">
+        <section id="dashboard-section" class="section active">
+          <div class="soft-card p-6 md:p-8 overflow-hidden relative">
+            <div class="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-dopamine-yellow/20 blur-3xl"></div>
+            <div class="absolute right-20 bottom-0 w-48 h-48 rounded-full bg-dopamine-pink/10 blur-3xl"></div>
+            <div class="relative flex flex-col xl:flex-row xl:items-center xl:justify-between gap-5">
+              <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-orange-50 border border-orange-100 px-3 py-1 text-sm font-bold text-dopamine-orange mb-3"><i class="fa-solid fa-sparkles"></i> 三份版本精华整合</div>
+                <h2 class="text-3xl md:text-4xl font-black tracking-tight mb-2">把自律、科研与投稿，放进同一个工作台</h2>
+                <p class="text-calm-mute max-w-3xl leading-7">这里整合了多巴胺视觉、起居/考勤、时间块、深度专注、饮食情绪、手机克制、成就系统、统计看板，以及新增的论文/会议投稿管理板块。所有数据默认保存在本地浏览器。</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3 min-w-[300px]">
+                <div class="bg-white rounded-2xl p-4 shadow-soft border border-orange-50">
+                  <div class="text-sm text-calm-mute mb-1">今日专注</div>
+                  <div id="heroFocus" class="text-3xl font-black text-dopamine-orange">0 分钟</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-soft border border-purple-50">
+                  <div class="text-sm text-calm-mute mb-1">今日出勤段数</div>
+                  <div id="heroAttendance" class="text-3xl font-black text-dopamine-purple">0</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-soft border border-green-50">
+                  <div class="text-sm text-calm-mute mb-1">已完成任务</div>
+                  <div id="heroTasks" class="text-3xl font-black text-dopamine-mint">0</div>
+                </div>
+                <div class="bg-white rounded-2xl p-4 shadow-soft border border-sky-50">
+                  <div class="text-sm text-calm-mute mb-1">投稿项目</div>
+                  <div id="heroSubs" class="text-3xl font-black text-dopamine-sky">0</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div class="soft-card p-5 border-t-4 border-dopamine-orange">
+              <div class="flex items-center justify-between mb-3"><h3 class="font-black">今日待做</h3><i class="fa-solid fa-list-check text-dopamine-orange"></i></div>
+              <div id="dashboardTodoList" class="space-y-2 text-sm"></div>
+            </div>
+            <div class="soft-card p-5 border-t-4 border-dopamine-mint">
+              <div class="flex items-center justify-between mb-3"><h3 class="font-black">最近专注记录</h3><i class="fa-solid fa-stopwatch text-dopamine-mint"></i></div>
+              <div id="dashboardFocusList" class="space-y-2 text-sm"></div>
+            </div>
+            <div class="soft-card p-5 border-t-4 border-dopamine-purple">
+              <div class="flex items-center justify-between mb-3"><h3 class="font-black">最近投稿提醒</h3><i class="fa-regular fa-paper-plane text-dopamine-purple"></i></div>
+              <div id="dashboardDeadlineList" class="space-y-2 text-sm"></div>
+            </div>
+            <div class="soft-card p-5 border-t-4 border-dopamine-sky">
+              <div class="flex items-center justify-between mb-3"><h3 class="font-black">今日心情 & 观心</h3><i class="fa-regular fa-face-smile text-dopamine-sky"></i></div>
+              <div id="dashboardMindCard" class="space-y-2 text-sm"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="attendance-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-2 soft-card p-6">
+              <div class="flex items-center justify-between mb-6">
+                <div>
+                  <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-regular fa-clock text-dopamine-orange"></i> 起居与工位打卡</h2>
+                  <p class="text-calm-mute text-sm mt-1">融合早起早睡、三时段考勤、多段工作记录与请假管理。</p>
+                </div>
+                <div class="text-sm bg-orange-50 text-dopamine-orange px-3 py-1 rounded-full font-bold">数据保存于本地</div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="rounded-2xl bg-yellow-50 border border-yellow-100 p-5">
+                  <div class="flex items-center justify-between mb-3"><h3 class="font-black text-dopamine-orange"><i class="fa-regular fa-sun mr-2"></i>起床打卡</h3><span class="mini-badge bg-white text-dopamine-orange">目标 09:00 前</span></div>
+                  <button id="btnWake" class="w-full bg-dopamine-yellow hover:brightness-95 text-white font-bold py-3 rounded-xl shadow-soft">我起床啦</button>
+                  <div class="mt-3 text-sm text-calm-mute flex items-center justify-between gap-3">今日记录：<span id="wakeDisplay" class="font-bold text-calm-ink">-</span><button id="clearWakeBtn" class="text-xs text-dopamine-sky font-bold">修改</button></div>
+                </div>
+                <div class="rounded-2xl bg-purple-50 border border-purple-100 p-5">
+                  <div class="flex items-center justify-between mb-3"><h3 class="font-black text-dopamine-purple"><i class="fa-regular fa-moon mr-2"></i>睡觉打卡</h3><span class="mini-badge bg-white text-dopamine-purple">目标 23:30 前</span></div>
+                  <button id="btnSleep" class="w-full bg-dopamine-purple hover:brightness-95 text-white font-bold py-3 rounded-xl shadow-soft">我要睡了</button>
+                  <div class="mt-3 text-sm text-calm-mute flex items-center justify-between gap-3">今日记录：<span id="sleepDisplay" class="font-bold text-calm-ink">-</span><button id="clearSleepBtn" class="text-xs text-dopamine-sky font-bold">修改</button></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div class="rounded-2xl bg-orange-50 border border-orange-100 p-4">
+                  <div class="flex items-center justify-between mb-3"><h3 class="font-black text-dopamine-orange">上午</h3><span class="text-xs text-calm-mute">08:00-12:00</span></div>
+                  <div class="flex gap-2 mb-3">
+                    <button class="period-btn flex-1 bg-dopamine-orange text-white rounded-xl py-2 font-bold" data-period="morning" data-action="start">开始</button>
+                    <button class="period-btn flex-1 bg-white text-dopamine-orange border border-orange-200 rounded-xl py-2 font-bold" data-period="morning" data-action="end">结束</button>
+                  </div>
+                  <div class="text-sm text-calm-mute">累计：<span id="periodTotal-morning" class="font-bold text-calm-ink">0 分钟</span></div>
+                  <div id="periodStatus-morning" class="mt-1 text-xs text-calm-mute">暂无进行中记录</div>
+                </div>
+                <div class="rounded-2xl bg-sky-50 border border-sky-100 p-4">
+                  <div class="flex items-center justify-between mb-3"><h3 class="font-black text-dopamine-sky">下午</h3><span class="text-xs text-calm-mute">14:00-18:00</span></div>
+                  <div class="flex gap-2 mb-3">
+                    <button class="period-btn flex-1 bg-dopamine-sky text-white rounded-xl py-2 font-bold" data-period="afternoon" data-action="start">开始</button>
+                    <button class="period-btn flex-1 bg-white text-dopamine-sky border border-sky-200 rounded-xl py-2 font-bold" data-period="afternoon" data-action="end">结束</button>
+                  </div>
+                  <div class="text-sm text-calm-mute">累计：<span id="periodTotal-afternoon" class="font-bold text-calm-ink">0 分钟</span></div>
+                  <div id="periodStatus-afternoon" class="mt-1 text-xs text-calm-mute">暂无进行中记录</div>
+                </div>
+                <div class="rounded-2xl bg-purple-50 border border-purple-100 p-4">
+                  <div class="flex items-center justify-between mb-3"><h3 class="font-black text-dopamine-purple">晚上</h3><span class="text-xs text-calm-mute">19:00-22:00</span></div>
+                  <div class="flex gap-2 mb-3">
+                    <button class="period-btn flex-1 bg-dopamine-purple text-white rounded-xl py-2 font-bold" data-period="evening" data-action="start">开始</button>
+                    <button class="period-btn flex-1 bg-white text-dopamine-purple border border-purple-200 rounded-xl py-2 font-bold" data-period="evening" data-action="end">结束</button>
+                  </div>
+                  <div class="text-sm text-calm-mute">累计：<span id="periodTotal-evening" class="font-bold text-calm-ink">0 分钟</span></div>
+                  <div id="periodStatus-evening" class="mt-1 text-xs text-calm-mute">暂无进行中记录</div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-gray-100 overflow-hidden mb-6">
+                <div class="px-5 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <h3 class="font-black">今日考勤明细</h3>
+                  <div class="text-sm text-calm-mute">支持多段累计</div>
+                </div>
+                <div class="p-5 grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  <div>
+                    <div id="attendanceTodayList" class="space-y-3"></div>
+                  </div>
+                  <div class="rounded-2xl bg-gradient-to-br from-orange-50 via-white to-purple-50 p-4 border border-orange-100">
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                      <div class="bg-white rounded-xl p-3"><div class="text-calm-mute">今日出勤段数</div><div id="attendanceCountToday" class="text-2xl font-black text-dopamine-orange">0</div></div>
+                      <div class="bg-white rounded-xl p-3"><div class="text-calm-mute">今日总工时</div><div id="attendanceMinutesToday" class="text-2xl font-black text-dopamine-mint">0m</div></div>
+                      <div class="bg-white rounded-xl p-3"><div class="text-calm-mute">早起状态</div><div id="attendanceWakeStatus" class="font-black text-dopamine-yellow">未记录</div></div>
+                      <div class="bg-white rounded-xl p-3"><div class="text-calm-mute">早睡状态</div><div id="attendanceSleepStatus" class="font-black text-dopamine-purple">未记录</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="rounded-2xl border border-gray-100 p-5">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="font-black">请假管理</h3>
+                  <span class="text-xs text-calm-mute">请假日不计入出勤</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                  <input id="leaveDate" type="date" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                  <select id="leaveType" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                    <option value="病假">病假</option>
+                    <option value="事假">事假</option>
+                    <option value="休息">休息</option>
+                    <option value="会议">会议/出差</option>
+                  </select>
+                  <input id="leaveReason" type="text" placeholder="请假理由" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky md:col-span-2">
+                </div>
+                <button id="addLeaveBtn" class="bg-dopamine-sky text-white px-5 py-3 rounded-xl font-bold">提交请假</button>
+                <div id="leaveList" class="mt-4 space-y-2"></div>
+              </div>
+            </div>
+
+            <div class="soft-card p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-black flex items-center gap-2"><i class="fa-regular fa-calendar text-dopamine-sky"></i> 出勤日历</h2>
+                <div class="flex items-center gap-2 text-sm">
+                  <button id="calPrev" class="w-9 h-9 rounded-full bg-gray-50 border border-gray-200"><i class="fa-solid fa-chevron-left"></i></button>
+                  <span id="calendarTitle" class="font-bold min-w-[96px] text-center"></span>
+                  <button id="calNext" class="w-9 h-9 rounded-full bg-gray-50 border border-gray-200"><i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+              </div>
+              <div class="grid grid-cols-7 text-center text-xs font-black text-calm-mute mb-2">
+                <div>日</div><div>一</div><div>二</div><div>三</div><div>四</div><div>五</div><div>六</div>
+              </div>
+              <div id="attendanceCalendarGrid" class="grid grid-cols-7 gap-2"></div>
+              <div class="mt-4 text-xs flex flex-wrap gap-4 text-calm-mute">
+                <div class="flex items-center gap-1"><span class="dot" style="background:#F9C74F"></span>早起达标</div>
+                <div class="flex items-center gap-1"><span class="dot" style="background:#9B5DE5"></span>早睡达标</div>
+                <div class="flex items-center gap-1"><span class="dot" style="background:#43AA8B"></span>满勤/高出勤</div>
+                <div class="flex items-center gap-1"><span class="dot" style="background:#4D9DE0"></span>请假</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="calendar-section" class="section">
+          <div class="time-week-shell">
+            <div class="time-week-main">
+              <div class="time-week-toolbar">
+                <div>
+                  <div class="time-week-kicker">Time Tracker Calendar</div>
+                  <button id="weekPickerBtn" class="time-week-title" type="button">
+                    <span id="weekRangeTitle">本周</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                  </button>
+                </div>
+                <div class="time-week-actions">
+                  <button id="prevWeekBtn" type="button" class="time-week-icon-btn" title="上一周"><i class="fa-solid fa-chevron-left"></i></button>
+                  <button id="thisWeekBtn" type="button" class="time-week-pill-btn">本周</button>
+                  <button id="nextWeekBtn" type="button" class="time-week-icon-btn" title="下一周"><i class="fa-solid fa-chevron-right"></i></button>
+                  <button id="quickAddBlockBtn" type="button" class="time-week-primary-btn"><i class="fa-solid fa-plus"></i> 补记</button>
+                </div>
+              </div>
+              <div id="timeWeekGrid" class="time-week-grid" aria-label="周时间追踪视图"></div>
+            </div>
+
+            <aside class="time-week-side">
+              <section class="time-week-panel">
+                <div class="time-week-panel-label">Timer</div>
+                <div id="weekTimerRing" class="time-week-timer-ring">
+                  <div>
+                    <div id="weekTimerDisplay" class="time-week-timer-value">00:00:00</div>
+                    <div id="weekTimerTask" class="time-week-timer-task">暂无进行中的任务</div>
+                  </div>
+                </div>
+                <div class="time-week-timer-actions">
+                  <button id="finishDoingTaskBtn" type="button" class="time-week-primary-btn">完成当前任务</button>
+                  <button id="cancelDoingTaskBtn" type="button" class="time-week-pill-btn">撤回</button>
+                </div>
+              </section>
+
+              <section class="time-week-panel">
+                <div class="time-week-panel-header">
+                  <div>
+                    <div class="time-week-panel-label">Stats</div>
+                    <h3>本周统计</h3>
+                  </div>
+                  <strong id="weekTotalText">0 分钟</strong>
+                </div>
+                <div id="weekCategoryStats" class="time-week-stat-list"></div>
+              </section>
+
+              <section class="time-week-panel">
+                <div class="time-week-panel-header">
+                  <div>
+                    <div class="time-week-panel-label">Details</div>
+                    <h3 id="weekSelectedDateTitle">今天明细</h3>
+                  </div>
+                </div>
+                <div id="weekDayDetails" class="time-week-detail-list"></div>
+              </section>
+            </aside>
+          </div>
+
+          <div id="quickBlockForm" class="time-week-form" hidden>
+            <div class="time-week-form-grid">
+              <input id="blockDate" type="date" class="time-week-input">
+              <input id="blockStart" type="time" class="time-week-input">
+              <input id="blockEnd" type="time" class="time-week-input">
+              <select id="blockCategory" class="time-week-input">
+                <option value="study">学习</option>
+                <option value="research">科研</option>
+                <option value="writing">写作</option>
+                <option value="meeting">会议</option>
+                <option value="exercise">运动</option>
+                <option value="meal">吃饭</option>
+                <option value="rest">休息</option>
+                <option value="life">生活杂务</option>
+              </select>
+              <input id="blockTitle" type="text" placeholder="例如：改摘要 / 跑仿真 / 组会" class="time-week-input time-week-form-title">
+              <textarea id="blockNotes" rows="2" placeholder="备注（可选）" class="time-week-input time-week-form-notes"></textarea>
+              <button id="addBlockBtn" class="time-week-primary-btn" type="button">添加到日历</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="focus-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-1 soft-card p-6">
+              <h2 class="text-2xl font-black mb-4 flex items-center gap-3"><i class="fa-solid fa-bullseye text-dopamine-orange"></i> 专注计时器</h2>
+              <div class="text-center rounded-3xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 p-6 mb-5">
+                <div class="text-calm-mute text-sm mb-2">当前专注时长</div>
+                <div id="focusTimerDisplay" class="text-5xl font-black text-dopamine-orange tracking-tight">00:00:00</div>
+                <div id="focusLiveBadge" class="mt-3 text-sm font-bold text-calm-mute">暂无进行中的专注</div>
+              </div>
+              <div class="space-y-3">
+                <input id="focusTitle" type="text" placeholder="本次专注主题，例如：改 Related Work" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-orange">
+                <select id="focusTaskLink" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-orange"></select>
+                <div class="grid grid-cols-2 gap-3">
+                  <button id="startFocusBtn" class="bg-dopamine-orange text-white py-3 rounded-xl font-black">开始专注</button>
+                  <button id="stopFocusBtn" class="bg-dopamine-mint text-white py-3 rounded-xl font-black">结束专注</button>
+                </div>
+                <button id="discardFocusBtn" class="mt-3 w-full bg-red-50 text-red-500 py-3 rounded-xl font-black border border-red-100">放弃本次（不计入记录）</button>
+              </div>
+              <div class="mt-5 border-t border-gray-100 pt-5">
+                <h3 class="font-black mb-3">手动补录</h3>
+                <div class="space-y-3">
+                  <input id="manualFocusDate" type="date" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+                  <input id="manualFocusTitle" type="text" placeholder="补录主题" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+                  <div class="grid grid-cols-2 gap-3">
+                    <input id="manualFocusStart" type="time" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+                    <input id="manualFocusEnd" type="time" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+                  </div>
+                  <button id="addManualFocusBtn" class="w-full bg-dopamine-mint text-white py-3 rounded-xl font-black">添加专注记录</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="xl:col-span-2 space-y-6">
+              <div class="soft-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-list-check text-dopamine-pink"></i> 任务管理</h2>
+                  <span class="text-sm text-calm-mute">未完成任务可继续追踪</span>
+                </div>
+                <div class="flex flex-col md:flex-row gap-3 mb-4">
+                  <input id="taskInput" type="text" placeholder="写论文、改图、跑实验、回审稿意见……" class="flex-1 px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-pink">
+                  <button id="addTaskBtn" class="bg-dopamine-pink text-white px-5 py-3 rounded-xl font-black">添加任务</button>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div>
+                    <div class="font-black mb-3">进行中</div>
+                    <div id="taskTodoList" class="space-y-3"></div>
+                  </div>
+                  <div>
+                    <div class="font-black mb-3">已完成</div>
+                    <div id="taskDoneList" class="space-y-3"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="soft-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-timeline text-dopamine-sky"></i> 今日专注时间线</h2>
+                  <span id="todayFocusTotalText" class="text-sm font-bold text-dopamine-sky"></span>
+                </div>
+                <div id="focusSessionList" class="space-y-3"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="lifestyle-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="soft-card p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-check-double text-dopamine-mint"></i> 每日习惯</h2>
+                <input id="habitDate" type="date" class="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4" id="habitList"></div>
+              <div class="flex gap-3 mt-4 border-t border-gray-100 pt-4">
+                <input id="newHabitInput" type="text" placeholder="新增一个习惯，例如：背单词 20 分钟" class="flex-1 px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-mint">
+                <button id="addHabitBtn" class="bg-dopamine-mint text-white px-5 py-3 rounded-xl font-black">添加</button>
+              </div>
+            </div>
+            <div class="soft-card p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-utensils text-dopamine-lime"></i> 饮食日记</h2>
+                <span class="text-sm text-calm-mute">记录三餐和零食</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                <input id="foodDate" type="date" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-lime">
+                <select id="foodMeal" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-lime">
+                  <option value="早餐">早餐</option>
+                  <option value="午餐">午餐</option>
+                  <option value="晚餐">晚餐</option>
+                  <option value="加餐">加餐/零食</option>
+                  <option value="饮水">饮水/饮品</option>
+                </select>
+                <input id="foodText" type="text" placeholder="吃了什么？" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-lime md:col-span-2">
+              </div>
+              <button id="addFoodBtn" class="bg-dopamine-lime text-white px-5 py-3 rounded-xl font-black">记录饮食</button>
+              <div id="foodList" class="mt-4 space-y-3"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="mind-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <div class="soft-card p-6">
+              <div class="flex items-center justify-between mb-5">
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-regular fa-face-smile text-dopamine-yellow"></i> 今日情绪</h2>
+                <input id="mindDate" type="date" class="px-4 py-2 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-yellow">
+              </div>
+              <div class="flex gap-4 text-4xl mb-5">
+                <button class="mood-emoji" data-mood="great">🤩</button>
+                <button class="mood-emoji" data-mood="happy">😊</button>
+                <button class="mood-emoji" data-mood="neutral">😐</button>
+                <button class="mood-emoji" data-mood="tired">🥲</button>
+                <button class="mood-emoji" data-mood="sad">😔</button>
+              </div>
+              <textarea id="moodNote" rows="5" placeholder="今天的情绪来源、触发点、身体感受……" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-yellow resize-none"></textarea>
+              <div class="mt-4 flex gap-3">
+                <button id="saveMoodBtn" class="bg-dopamine-yellow text-white px-5 py-3 rounded-xl font-black">保存情绪记录</button>
+                <button id="deleteMoodBtn" class="bg-gray-100 text-calm-ink px-5 py-3 rounded-xl font-black border border-gray-200">清空当天记录</button>
+              </div>
+              <div id="moodHistoryList" class="mt-5 space-y-3"></div>
+            </div>
+            <div class="soft-card p-6">
+              <div class="flex items-center justify-between mb-5">
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-regular fa-heart text-dopamine-pink"></i> 观心反思</h2>
+                <span class="text-sm text-calm-mute">每天写一点</span>
+              </div>
+              <div class="space-y-3">
+                <textarea id="reflectProud" rows="3" placeholder="今天最值得肯定的一件事" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-pink resize-none"></textarea>
+                <textarea id="reflectChange" rows="3" placeholder="今天最想调整的一件事" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-pink resize-none"></textarea>
+                <textarea id="reflectInsight" rows="3" placeholder="今天的一个洞察 / 学术灵感" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-pink resize-none"></textarea>
+                <textarea id="reflectGratitude" rows="3" placeholder="今天感谢什么" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-pink resize-none"></textarea>
+                <div class="flex gap-3 flex-wrap">
+                  <button id="saveReflectionBtn" class="bg-dopamine-pink text-white px-5 py-3 rounded-xl font-black">保存今日观心</button>
+                  <button id="clearReflectionBtn" class="bg-gray-100 text-calm-ink px-5 py-3 rounded-xl font-black">清空输入框</button>
+                  <button id="deleteReflectionBtn" class="bg-gray-100 text-calm-ink px-5 py-3 rounded-xl font-black border border-gray-200">清空当天记录</button>
+                </div>
+              </div>
+              <div id="reflectionHistoryList" class="mt-5 space-y-3"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="phone-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            <div class="xl:col-span-1 soft-card p-6">
+              <h2 class="text-2xl font-black mb-4 flex items-center gap-3"><i class="fa-solid fa-mobile-screen-button text-dopamine-purple"></i> 手机克制</h2>
+              <div class="text-center rounded-3xl bg-gradient-to-br from-purple-50 to-white border border-purple-100 p-6 mb-5">
+                <div class="text-calm-mute text-sm mb-2">累计成功克制</div>
+                <div id="phoneResistCount" class="text-5xl font-black text-dopamine-purple">0</div>
+                <div class="text-sm text-calm-mute mt-2">失败次数：<span id="phoneFailCount" class="font-bold">0</span></div>
+              </div>
+              <input id="phoneReason" type="text" placeholder="触发原因：无聊 / 焦虑 / 想刷视频……" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-purple mb-3">
+              <div class="grid grid-cols-2 gap-3">
+                <button id="phoneResistBtn" class="bg-dopamine-purple text-white py-3 rounded-xl font-black">成功克制</button>
+                <button id="phoneFailBtn" class="bg-gray-100 text-calm-ink py-3 rounded-xl font-black">没忍住</button>
+              </div>
+              <div id="phoneLogList" class="mt-5 space-y-3"></div>
+            </div>
+            <div class="xl:col-span-2 soft-card p-6">
+              <div class="flex items-center justify-between mb-5">
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-trophy text-dopamine-yellow"></i> 成就殿堂</h2>
+                <div class="text-sm bg-yellow-50 text-dopamine-orange font-bold px-3 py-1 rounded-full">自动解锁</div>
+              </div>
+              <div id="achievementSummary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5"></div>
+              <div id="achievementList" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="submission-section" class="section">
+          <div class="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <div class="xl:col-span-1 soft-card p-6">
+              <h2 class="text-2xl font-black mb-4 flex items-center gap-3"><i class="fa-regular fa-paper-plane text-dopamine-sky"></i> 新增投稿项目</h2>
+              <div class="space-y-3">
+                <input id="subTitle" type="text" placeholder="题目 / 项目名" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                <div class="grid grid-cols-2 gap-3">
+                  <select id="subType" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                    <option value="Journal">Journal</option>
+                    <option value="Conference">Conference</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Doctoral Consortium">Doctoral Consortium</option>
+                  </select>
+                  <select id="subPriority" class="px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                    <option value="高">高优先级</option>
+                    <option value="中">中优先级</option>
+                    <option value="低">低优先级</option>
+                  </select>
+                </div>
+                <input id="subVenue" type="text" placeholder="目标期刊 / 会议" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                <input id="subDeadline" type="date" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                <select id="subStage" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                  <option value="选题中">选题中</option>
+                  <option value="写作中">写作中</option>
+                  <option value="内审/合作者">内审/合作者</option>
+                  <option value="待投稿">待投稿</option>
+                  <option value="已投稿">已投稿</option>
+                  <option value="审稿中">审稿中</option>
+                  <option value="返修中">返修中</option>
+                  <option value="已接收">已接收</option>
+                  <option value="搁置/拒稿">搁置/拒稿</option>
+                </select>
+                <input id="subVersion" type="text" placeholder="版本，例如 v3 / camera-ready" class="w-full px-4 py-3 rounded-xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky">
+                <textarea id="subNotes" rows="4" placeholder="关键任务、缺口、审稿点、提醒……" class="w-full px-4 py-3 rounded-2xl border border-gray-200 outline-none focus:ring-2 focus:ring-dopamine-sky resize-none"></textarea>
+                <button id="addSubmissionBtn" class="w-full bg-dopamine-sky text-white py-3 rounded-xl font-black">加入投稿板</button>
+              </div>
+            </div>
+            <div class="xl:col-span-3 space-y-6">
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="submissionTopStats"></div>
+              <div class="soft-card p-6 overflow-x-auto">
+                <div class="flex items-center justify-between mb-5">
+                  <h2 class="text-2xl font-black">投稿管理看板</h2>
+                  <div class="text-sm text-calm-mute">按阶段拖拽不做，直接在卡片内切换状态更稳</div>
+                </div>
+                <div id="submissionBoard" class="grid grid-cols-1 lg:grid-cols-4 gap-4 min-w-[960px]"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="settings-section" class="section">
+          <div class="soft-card p-6 md:p-8 space-y-6">
+            <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
+              <div>
+                <div class="inline-flex items-center gap-2 rounded-full bg-slate-50 border border-slate-200 px-3 py-1 text-sm font-bold text-slate-600 mb-3"><i class="fa-solid fa-database"></i> 设置 / 数据管理</div>
+                <h2 class="text-2xl md:text-3xl font-black mb-2">把本地数据看清楚、导出来、再安全导回去</h2>
+                <p class="text-calm-mute leading-7 max-w-3xl">当前版本的数据默认保存在本浏览器的 <code class="bg-slate-100 px-2 py-1 rounded-lg text-sm">localStorage</code> 中。这里可以查看存储键、导出 JSON 备份、导入已有备份，以及清理异常进行中状态或全部数据。</p>
+              </div>
+              <div class="grid grid-cols-2 gap-3 min-w-[280px]">
+                <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-soft">
+                  <div class="text-sm text-calm-mute mb-1">存储键</div>
+                  <div id="settingsStorageKey" class="text-sm font-black break-all text-slate-700">-</div>
+                </div>
+                <div class="bg-white rounded-2xl border border-slate-100 p-4 shadow-soft">
+                  <div class="text-sm text-calm-mute mb-1">估算占用</div>
+                  <div id="settingsStorageBytes" class="text-2xl font-black text-dopamine-purple">0 KB</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              <div class="bg-white rounded-2xl border border-orange-100 p-4 shadow-soft">
+                <div class="text-sm text-calm-mute mb-1">专注记录</div>
+                <div id="settingsCountFocus" class="text-3xl font-black text-dopamine-orange">0</div>
+              </div>
+              <div class="bg-white rounded-2xl border border-sky-100 p-4 shadow-soft">
+                <div class="text-sm text-calm-mute mb-1">时间块</div>
+                <div id="settingsCountBlocks" class="text-3xl font-black text-dopamine-sky">0</div>
+              </div>
+              <div class="bg-white rounded-2xl border border-green-100 p-4 shadow-soft">
+                <div class="text-sm text-calm-mute mb-1">任务 / 投稿</div>
+                <div id="settingsCountWork" class="text-3xl font-black text-dopamine-mint">0 / 0</div>
+              </div>
+              <div class="bg-white rounded-2xl border border-purple-100 p-4 shadow-soft">
+                <div class="text-sm text-calm-mute mb-1">情绪 / 反思 / 饮食 / 手机</div>
+                <div id="settingsCountLife" class="text-3xl font-black text-dopamine-purple">0 / 0 / 0 / 0</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div class="bg-gradient-to-br from-orange-50 to-rose-50 rounded-3xl p-5 border border-orange-100 shadow-soft space-y-4">
+                <div>
+                  <h3 class="text-lg font-black mb-1">导出备份</h3>
+                  <p class="text-sm text-calm-mute">把当前所有数据导出成 JSON 文件，适合换浏览器、换电脑前先备份。</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button id="downloadBackupBtn" class="px-4 py-2.5 rounded-2xl bg-dopamine-orange text-white font-bold shadow-soft hover:brightness-105"><i class="fa-solid fa-download mr-2"></i>下载 JSON 备份</button>
+                  <button id="copyBackupBtn" class="px-4 py-2.5 rounded-2xl bg-white border border-orange-200 text-dopamine-orange font-bold shadow-soft hover:bg-orange-50"><i class="fa-regular fa-copy mr-2"></i>复制 JSON 到剪贴板</button>
+                </div>
+                <div id="settingsExportHint" class="text-sm text-calm-mute">建议定期手动导出，浏览器清缓存后本地记录可能会消失。</div>
+              </div>
+
+              <div class="bg-gradient-to-br from-sky-50 to-indigo-50 rounded-3xl p-5 border border-sky-100 shadow-soft space-y-4">
+                <div>
+                  <h3 class="text-lg font-black mb-1">导入恢复</h3>
+                  <p class="text-sm text-calm-mute">支持两种方式：上传之前导出的 JSON 文件，或把 JSON 文本粘贴到下方再导入。</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button id="importFileBtn" class="px-4 py-2.5 rounded-2xl bg-dopamine-sky text-white font-bold shadow-soft hover:brightness-105"><i class="fa-solid fa-file-arrow-up mr-2"></i>从文件导入</button>
+                  <input id="importFileInput" type="file" accept="application/json,.json" class="hidden">
+                  <button id="importTextareaBtn" class="px-4 py-2.5 rounded-2xl bg-white border border-sky-200 text-dopamine-sky font-bold shadow-soft hover:bg-sky-50"><i class="fa-solid fa-paste mr-2"></i>导入下方文本</button>
+                </div>
+                <textarea id="importJsonTextarea" class="w-full min-h-[160px] rounded-2xl border border-sky-100 bg-white/90 px-4 py-3 outline-none focus:ring-2 focus:ring-sky-200 text-sm" placeholder='把备份 JSON 粘贴到这里，再点击“导入下方文本”'></textarea>
+                <div id="settingsImportHint" class="text-sm text-calm-mute">导入会覆盖当前页面数据，导入前建议先导出一份当前备份。</div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div class="bg-white rounded-3xl p-5 border border-green-100 shadow-soft space-y-4">
+                <div>
+                  <h3 class="text-lg font-black mb-1">修复与清理</h3>
+                  <p class="text-sm text-calm-mute">遇到忘记结束、误触开启等情况，可以先用轻量修复，而不是直接清空全部数据。</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button id="clearRunningStateBtn" class="px-4 py-2.5 rounded-2xl bg-dopamine-mint text-white font-bold shadow-soft hover:brightness-105"><i class="fa-solid fa-broom mr-2"></i>清除进行中状态</button>
+                  <button id="resetTodayBtn" class="px-4 py-2.5 rounded-2xl bg-white border border-green-200 text-dopamine-mint font-bold shadow-soft hover:bg-green-50"><i class="fa-regular fa-calendar-xmark mr-2"></i>重置今天的进行中项</button>
+                </div>
+                <ul class="text-sm text-calm-mute space-y-2 list-disc pl-5">
+                  <li>会清除专注中的 active 状态。</li>
+                  <li>会清除三时段考勤里还没结束的 active 段。</li>
+                  <li>不会删除已经完成的历史记录。</li>
+                </ul>
+              </div>
+
+              <div class="bg-gradient-to-br from-rose-50 to-red-50 rounded-3xl p-5 border border-rose-100 shadow-soft space-y-4">
+                <div>
+                  <h3 class="text-lg font-black mb-1 text-rose-700">危险操作</h3>
+                  <p class="text-sm text-calm-mute">会清空这套工作台当前存储键下的全部数据。执行前请先导出备份。</p>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                  <button id="clearAllDataBtn" class="px-4 py-2.5 rounded-2xl bg-rose-500 text-white font-bold shadow-soft hover:brightness-105"><i class="fa-solid fa-trash-can mr-2"></i>清空全部数据</button>
+                </div>
+                <div class="text-sm text-rose-600 font-medium">此操作不可撤销，除非你之前已经导出过 JSON 备份。</div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 rounded-3xl p-5 border border-slate-200 shadow-soft space-y-3">
+              <div class="flex items-center justify-between gap-3 flex-wrap">
+                <div>
+                  <h3 class="text-lg font-black mb-1">当前数据预览</h3>
+                  <p class="text-sm text-calm-mute">这里只做只读预览，方便你确认备份内容结构。</p>
+                </div>
+                <button id="refreshPreviewBtn" class="px-4 py-2.5 rounded-2xl bg-white border border-slate-200 text-slate-700 font-bold shadow-soft hover:bg-slate-100"><i class="fa-solid fa-rotate mr-2"></i>刷新预览</button>
+              </div>
+              <textarea id="settingsPreviewTextarea" readonly class="w-full min-h-[260px] rounded-2xl border border-slate-200 bg-white px-4 py-3 outline-none text-xs font-mono leading-6"></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section id="analytics-section" class="section">
+          <div class="soft-card p-6 mb-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-5">
+              <div>
+                <h2 class="text-2xl font-black flex items-center gap-3"><i class="fa-solid fa-chart-line text-dopamine-orange"></i> 数据看板</h2>
+                <p class="text-calm-mute text-sm mt-1">汇总专注、出勤、习惯、手机克制与投稿进度。</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <button class="range-btn bg-dopamine-orange text-white px-4 py-2 rounded-full font-bold" data-days="7">7天</button>
+                <button class="range-btn bg-gray-100 px-4 py-2 rounded-full font-bold" data-days="30">30天</button>
+                <button class="range-btn bg-gray-100 px-4 py-2 rounded-full font-bold" data-days="90">90天</button>
+                <button class="range-btn bg-gray-100 px-4 py-2 rounded-full font-bold" data-days="365">365天</button>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 mb-6" id="analyticsSummary"></div>
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <div class="bg-white rounded-2xl border border-gray-100 p-4"><h3 class="font-black mb-3">每日专注时长</h3><div class="h-72"><canvas id="focusChart"></canvas></div></div>
+              <div class="bg-white rounded-2xl border border-gray-100 p-4"><h3 class="font-black mb-3">工位出勤情况</h3><div class="h-72"><canvas id="attendanceChart"></canvas></div></div>
+              <div class="bg-white rounded-2xl border border-gray-100 p-4"><h3 class="font-black mb-3">手机克制趋势</h3><div class="h-72"><canvas id="phoneChart"></canvas></div></div>
+              <div class="bg-white rounded-2xl border border-gray-100 p-4"><h3 class="font-black mb-3">习惯完成度</h3><div class="h-72"><canvas id="habitChart"></canvas></div></div>
+              <div class="bg-white rounded-2xl border border-gray-100 p-4 xl:col-span-2"><h3 class="font-black mb-3">投稿阶段分布</h3><div class="h-72"><canvas id="submissionChart"></canvas></div></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+
+  <div id="recordActionOverlay" class="record-action-overlay">
+    <div class="record-action-card">
+      <div class="px-5 pt-5 pb-3 border-b border-gray-100">
+        <div id="recordActionTitle" class="text-lg font-black text-calm-ink">记录操作</div>
+        <div id="recordActionSubtitle" class="text-sm text-calm-mute mt-1">你可以先修改，也可以直接删除这条记录。</div>
+      </div>
+      <div class="p-4 space-y-3">
+        <button id="recordActionEditBtn" class="record-action-btn bg-sky-50 text-dopamine-sky border-sky-100">✏️ 修改这条记录</button>
+        <button id="recordActionDeleteBtn" class="record-action-btn bg-red-50 text-red-500 border-red-100">🗑️ 删除这条记录</button>
+        <button id="recordActionCancelBtn" class="record-action-btn bg-gray-100 text-calm-ink border-gray-200">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'phd_master_workspace_merged_v1';
+    const DEFAULT_HABITS = [
+      { id: 'habit_reading', name: '阅读论文', icon: '📚' },
+      { id: 'habit_writing', name: '学术写作', icon: '✍️' },
+      { id: 'habit_exercise', name: '运动', icon: '🏃' },
+      { id: 'habit_water', name: '喝水', icon: '💧' },
+      { id: 'habit_sleep', name: '按时睡觉', icon: '🌙' },
+      { id: 'habit_mind', name: '观心记录', icon: '🫶' }
+    ];
+    const PERIOD_META = {
+      morning: { label: '上午', startStandard: '08:00', color: '#FF8C42' },
+      afternoon: { label: '下午', startStandard: '14:00', color: '#4D9DE0' },
+      evening: { label: '晚上', startStandard: '19:00', color: '#9B5DE5' }
+    };
+    const SUBMISSION_COLUMNS = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','搁置/拒稿'];
+    const SUBMISSION_STAGE_COLOR = {
+      '选题中':'#9B5DE5','写作中':'#FF8C42','内审/合作者':'#F9C74F','待投稿':'#4D9DE0','已投稿':'#43AA8B','审稿中':'#3b82f6','返修中':'#f97316','已接收':'#10b981','搁置/拒稿':'#9ca3af'
+    };
+    const CATEGORY_META = {
+      study: { label: '学习', icon: '📖', color: '#9fbcdb' },
+      research: { label: '科研', icon: '🧪', color: '#bbaecc' },
+      writing: { label: '写作', icon: '✍️', color: '#FF8C42' },
+      meeting: { label: '会议', icon: '👥', color: '#4D9DE0' },
+      exercise: { label: '运动', icon: '🏃', color: '#43AA8B' },
+      meal: { label: '饮食', icon: '🍽️', color: '#A7C957' },
+      rest: { label: '休息', icon: '🛌', color: '#F9C74F' },
+      life: { label: '生活', icon: '🧹', color: '#F48C6E' }
+    };
+    const FOCUS_WEEK_META = { label: '专注', icon: '🎯', color: '#FF6B8B' };
+    const WEEK_DAY_LABELS = ['周一','周二','周三','周四','周五','周六','周日'];
+    const WEEK_VISIBLE_START = 7 * 60;
+    const WEEK_VISIBLE_END = 23 * 60;
+
+    const state = loadState();
+    let currentSection = 'dashboard-section';
+    let focusTicker = null;
+    let analyticsRangeDays = 7;
+    let calendarCursor = new Date();
+    let weekCursor = null;
+    let selectedWeekDate = null;
+    let charts = { focus:null, attendance:null, phone:null, habit:null, submission:null };
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return sanitizeImportedState(parsed);
+      } catch (e) {
+        console.error(e);
+        return sanitizeImportedState({});
+      }
+    }
+    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function uid(prefix='id') { return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function todayStr(offset = 0) { const d = new Date(); d.setDate(d.getDate() + offset); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+    function dateTimeNow() { const d = new Date(); return `${todayStr()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+    function timeNow() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+    function escapeHtml(s='') { return s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+    function minutesBetween(start, end) {
+      const [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      let startM = sh*60+sm, endM = eh*60+em;
+      if (endM < startM) endM += 24*60;
+      return Math.max(0, endM - startM);
+    }
+    function formatMinutes(m) {
+      if (!Number.isFinite(m)) return '0 分钟';
+      const h = Math.floor(m/60), mm = m%60;
+      return h > 0 ? `${h}小时 ${mm}分钟` : `${mm}分钟`;
+    }
+    function formatDateTimeShort(value) {
+      return typeof value === 'string' && value ? value.slice(0,16).replace('T',' ') : '-';
+    }
+    function dateFromYmd(date) {
+      const [y,m,d] = date.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    }
+    function ymdFromDate(date) {
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+    }
+    function getWeekStartMonday(date = todayStr()) {
+      const value = dateFromYmd(date);
+      const day = value.getDay() || 7;
+      value.setDate(value.getDate() - day + 1);
+      return ymdFromDate(value);
+    }
+    function getWeekDates(date = todayStr()) {
+      const start = dateFromYmd(getWeekStartMonday(date));
+      return Array.from({length:7}, (_, i) => ymdFromDate(new Date(start.getTime() + i * 86400000)));
+    }
+    function shiftWeek(date, delta) {
+      const value = dateFromYmd(getWeekStartMonday(date));
+      value.setDate(value.getDate() + delta * 7);
+      return ymdFromDate(value);
+    }
+    function minutesOfDay(value) {
+      const [h,m] = value.split(':').map(Number);
+      return h * 60 + m;
+    }
+    function positionWeekBlock(start, end, minutes = 0) {
+      const rawStartMinute = minutesOfDay(start);
+      const rawEndMinute = minutesOfDay(end);
+      const span = WEEK_VISIBLE_END - WEEK_VISIBLE_START;
+      const minHeight = 3.5;
+      const isShortPoint = rawEndMinute === rawStartMinute && Number.isFinite(minutes) && minutes > 0;
+      if (Number.isFinite(rawStartMinute) && Number.isFinite(rawEndMinute) && isShortPoint && rawStartMinute >= WEEK_VISIBLE_START && rawStartMinute <= WEEK_VISIBLE_END) {
+        const top = Math.min(((rawStartMinute - WEEK_VISIBLE_START) / span) * 100, 100 - minHeight);
+        return {
+          top,
+          height: minHeight,
+          visible: true
+        };
+      }
+      const startMinute = Math.max(WEEK_VISIBLE_START, rawStartMinute);
+      const endMinute = Math.min(WEEK_VISIBLE_END, rawEndMinute);
+      if (!Number.isFinite(rawStartMinute) || !Number.isFinite(rawEndMinute) || endMinute <= startMinute) {
+        return {
+          top: rawStartMinute >= WEEK_VISIBLE_END ? 100 : 0,
+          height: 0,
+          visible: false
+        };
+      }
+      const top = ((startMinute - WEEK_VISIBLE_START) / span) * 100;
+      const rawHeight = ((endMinute - startMinute) / span) * 100;
+      return {
+        top,
+        height: Math.min(Math.max(rawHeight, minHeight), 100 - top),
+        visible: true
+      };
+    }
+    function assignWeekLanes(blocks) {
+      const lanes = [];
+      return blocks
+        .map(block => ({ ...block, startMinute: minutesOfDay(block.start), endMinute: minutesOfDay(block.end) }))
+        .sort((a,b) => a.startMinute - b.startMinute || a.endMinute - b.endMinute)
+        .map(block => {
+          let laneIndex = lanes.findIndex(laneEnd => laneEnd <= block.startMinute);
+          if (laneIndex === -1) {
+            laneIndex = lanes.length;
+            lanes.push(block.endMinute);
+          } else {
+            lanes[laneIndex] = block.endMinute;
+          }
+          return { ...block, laneIndex, laneCount: lanes.length };
+        });
+    }
+    function nextDate(date) {
+      const value = dateFromYmd(date);
+      value.setDate(value.getDate() + 1);
+      return ymdFromDate(value);
+    }
+    function formatWeekRange(dates) {
+      const first = dates[0], last = dates[6];
+      return `${first.slice(5).replace('-', '/')} - ${last.slice(5).replace('-', '/')}`;
+    }
+    function formatDayShort(date) {
+      return date.slice(5).replace('-', '/');
+    }
+    function getDayAttendance(date = todayStr()) {
+      if (!state.attendance[date]) {
+        state.attendance[date] = {
+          wake: null,
+          sleep: null,
+          leave: null,
+          periods: {
+            morning: { activeStart: null, segments: [] },
+            afternoon: { activeStart: null, segments: [] },
+            evening: { activeStart: null, segments: [] }
+          }
+        };
+      }
+      return state.attendance[date];
+    }
+    function dayFocusMinutes(date = todayStr()) {
+      return state.focus.sessions.filter(s => s.date === date).reduce((sum, s) => sum + (s.minutes || 0), 0);
+    }
+    function dayHabitCompletion(date = todayStr()) {
+      const logs = state.habits.logs[date] || {};
+      const total = state.habits.list.length || 1;
+      const done = state.habits.list.filter(h => logs[h.id]).length;
+      return Math.round(done / total * 100);
+    }
+    function countTodayAttendanceSegments(date = todayStr()) {
+      const day = getDayAttendance(date);
+      return Object.values(day.periods).reduce((sum, p) => sum + p.segments.length, 0);
+    }
+    function todayAttendanceMinutes(date = todayStr()) {
+      const day = getDayAttendance(date);
+      return Object.values(day.periods).reduce((sum, p) => sum + p.segments.reduce((a, s) => a + s.minutes, 0), 0);
+    }
+    function qualifiesWake(time) { return time && minutesBetween(time, '09:00') >= 0; }
+    function qualifiesSleep(time) { return time && minutesBetween(time, '23:30') <= 0; }
+    function clearWake(date = todayStr()) {
+      const day = getDayAttendance(date);
+      day.wake = null;
+      saveState(); renderAll();
+    }
+    function clearSleep(date = todayStr()) {
+      const day = getDayAttendance(date);
+      day.sleep = null;
+      saveState(); renderAll();
+    }
+    function normalizeHM(value) {
+      if (value == null) return null;
+      const v = String(value).trim();
+      if (!v) return '';
+      const m = v.match(/^(\d{1,2}):(\d{1,2})$/);
+      if (!m) return null;
+      const hh = Number(m[1]), mm = Number(m[2]);
+      if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return null;
+      return `${pad(hh)}:${pad(mm)}`;
+    }
+    function doEditWake(date = todayStr()) {
+      const day = getDayAttendance(date);
+      const next = prompt('修改起床时间（HH:MM，留空可清空）', day.wake || '08:00');
+      if (next === null) return;
+      const normalized = normalizeHM(next);
+      if (normalized === null) { alert('时间格式应为 HH:MM'); return; }
+      day.wake = normalized || null;
+      saveState(); renderAll();
+    }
+    function editWake(date = todayStr()) {
+      openRecordActionDialog(`起床记录 · ${date}`, () => doEditWake(date), () => clearWake(date), '删除这条起床记录');
+    }
+    function doEditSleep(date = todayStr()) {
+      const day = getDayAttendance(date);
+      const next = prompt('修改睡觉时间（HH:MM，留空可清空）', day.sleep || '23:00');
+      if (next === null) return;
+      const normalized = normalizeHM(next);
+      if (normalized === null) { alert('时间格式应为 HH:MM'); return; }
+      day.sleep = normalized || null;
+      saveState(); renderAll();
+    }
+    function editSleep(date = todayStr()) {
+      openRecordActionDialog(`睡觉记录 · ${date}`, () => doEditSleep(date), () => clearSleep(date), '删除这条睡觉记录');
+    }
+    function doEditAttendanceSegment(date, period, index) {
+      const day = getDayAttendance(date);
+      const slot = day.periods?.[period];
+      const seg = slot?.segments?.[index];
+      if (!seg) return;
+      const start = prompt(`修改${PERIOD_META[period].label}开始时间（HH:MM）`, seg.start || '09:00');
+      if (start === null) return;
+      const startHM = normalizeHM(start);
+      if (startHM === null) { alert('开始时间格式应为 HH:MM'); return; }
+      const end = prompt(`修改${PERIOD_META[period].label}结束时间（HH:MM）`, seg.end || '10:00');
+      if (end === null) return;
+      const endHM = normalizeHM(end);
+      if (endHM === null) { alert('结束时间格式应为 HH:MM'); return; }
+      seg.start = startHM;
+      seg.end = endHM;
+      seg.minutes = minutesBetween(startHM, endHM);
+      seg.qualified = startHM <= PERIOD_META[period].startStandard;
+      saveState(); renderAll();
+    }
+    function editAttendanceSegment(date, period, index) {
+      const label = PERIOD_META[period]?.label || '出勤记录';
+      openRecordActionDialog(`${label} · 第${index + 1}段`, () => doEditAttendanceSegment(date, period, index), () => deleteAttendanceSegment(date, period, index), '删除这段出勤记录');
+    }
+    function doEditTimeBlock(id, date) {
+      const list = state.timeBlocks[date] || [];
+      const item = list.find(x => x.id === id);
+      if (!item) return;
+      const title = prompt('修改时间块标题', item.title || '');
+      if (title === null) return;
+      const start = prompt('修改开始时间（HH:MM）', item.start || '09:00');
+      if (start === null) return;
+      const startHM = normalizeHM(start);
+      if (startHM === null) { alert('开始时间格式应为 HH:MM'); return; }
+      const end = prompt('修改结束时间（HH:MM）', item.end || '10:00');
+      if (end === null) return;
+      const endHM = normalizeHM(end);
+      if (endHM === null) { alert('结束时间格式应为 HH:MM'); return; }
+      const notes = prompt('修改备注（可留空）', item.notes || '');
+      if (notes === null) return;
+      item.title = title.trim() || item.title;
+      item.start = startHM;
+      item.end = endHM;
+      item.notes = notes.trim();
+      item.minutes = minutesBetween(startHM, endHM);
+      list.sort((a,b)=>a.start.localeCompare(b.start));
+      saveState(); renderCalendarSection(); renderAll();
+    }
+    function editTimeBlock(id, date) {
+      const list = state.timeBlocks[date] || [];
+      const item = list.find(x => x.id === id);
+      if (!item) return;
+      openRecordActionDialog(`时间块 · ${item.title || date}`, () => doEditTimeBlock(id, date), () => removeTimeBlock(id, date), '删除这个时间块');
+    }
+    function doEditLeave(date) {
+      const day = getDayAttendance(date);
+      const leave = day.leave;
+      if (!leave) return;
+      const type = prompt('修改请假类型', leave.type || '事假');
+      if (type === null) return;
+      const reason = prompt('修改请假理由', leave.reason || '');
+      if (reason === null) return;
+      day.leave = { ...leave, type: type.trim() || leave.type, reason: reason.trim() || leave.reason };
+      saveState(); renderAll();
+    }
+    function editLeave(date) {
+      const leave = getDayAttendance(date).leave;
+      if (!leave) return;
+      openRecordActionDialog(`请假记录 · ${date}`, () => doEditLeave(date), () => removeLeave(date), '删除这条请假记录');
+    }
+    function doEditFocusSession(id) {
+      const s = state.focus.sessions.find(x => x.id === id);
+      if (!s) return;
+      const title = prompt('修改专注主题', s.title || '');
+      if (title === null) return;
+      const date = prompt('修改日期（YYYY-MM-DD）', s.date || todayStr());
+      if (date === null) return;
+      const start = prompt('修改开始时间（HH:MM）', s.startTime || '09:00');
+      if (start === null) return;
+      const startHM = normalizeHM(start);
+      if (startHM === null) { alert('开始时间格式应为 HH:MM'); return; }
+      const end = prompt('修改结束时间（HH:MM）', s.endTime || '10:00');
+      if (end === null) return;
+      const endHM = normalizeHM(end);
+      if (endHM === null) { alert('结束时间格式应为 HH:MM'); return; }
+      s.title = title.trim() || s.title;
+      s.date = date.trim() || s.date;
+      s.startTime = startHM;
+      s.endTime = endHM;
+      s.minutes = minutesBetween(startHM, endHM);
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function editFocusSession(id) {
+      const s = state.focus.sessions.find(x => x.id === id);
+      if (!s) return;
+      openRecordActionDialog(`专注记录 · ${s.title || s.date}`, () => doEditFocusSession(id), () => deleteFocusSession(id), '删除这条专注记录');
+    }
+    function openMindDateForEdit(date) {
+      const input = document.getElementById('mindDate');
+      if (input) input.value = date;
+      renderMindSection();
+      const mindBtn = document.querySelector('.nav-btn[data-target="mind-section"]');
+      if (mindBtn) switchSection('mind-section', mindBtn);
+    }
+    function doEditPhoneLog(id) {
+      const item = state.phone.logs.find(x => x.id === id);
+      if (!item) return;
+      const reason = prompt('修改原因/备注', item.reason || '');
+      if (reason === null) return;
+      const status = prompt('修改状态：输入 1 表示成功克制，输入 0 表示没忍住', item.resisted ? '1' : '0');
+      if (status === null) return;
+      item.reason = reason.trim() || item.reason;
+      item.resisted = String(status).trim() !== '0';
+      saveState(); renderPhoneSection(); renderAll();
+    }
+    function editPhoneLog(id) {
+      const item = state.phone.logs.find(x => x.id === id);
+      if (!item) return;
+      openRecordActionDialog(`手机记录 · ${item.date} ${item.time}`, () => doEditPhoneLog(id), () => deletePhoneLog(id), '删除这条手机记录');
+    }
+    function doEditSubmission(id) {
+      const item = state.submissions.find(x => x.id === id);
+      if (!item) return;
+      const title = prompt('修改题目', item.title || '');
+      if (title === null) return;
+      const venue = prompt('修改期刊/会议', item.venue || '');
+      if (venue === null) return;
+      const deadline = prompt('修改截止日期（YYYY-MM-DD，可留空）', item.deadline || '');
+      if (deadline === null) return;
+      const notes = prompt('修改备注（可留空）', item.notes || '');
+      if (notes === null) return;
+      item.title = title.trim() || item.title;
+      item.venue = venue.trim();
+      item.deadline = deadline.trim();
+      item.notes = notes.trim();
+      saveState(); renderSubmissionSection(); renderAll();
+    }
+    function editSubmission(id) {
+      const item = state.submissions.find(x => x.id === id);
+      if (!item) return;
+      openRecordActionDialog(`投稿项目 · ${item.title || '未命名项目'}`, () => doEditSubmission(id), () => deleteSubmission(id), '删除这个投稿项目');
+    }
+    function deleteAttendanceSegment(date, period, index) {
+      const day = getDayAttendance(date);
+      if (!day.periods[period]) return;
+      day.periods[period].segments.splice(index, 1);
+      saveState(); renderAll();
+    }
+    function clearPeriodActive(period, date = todayStr()) {
+      const day = getDayAttendance(date);
+      if (!day.periods[period]) return;
+      day.periods[period].activeStart = null;
+      saveState(); renderAll();
+    }
+    function parseDate(str) { const [y,m,d] = str.split('-').map(Number); return new Date(y, m-1, d); }
+    function daysDiff(a, b) { return Math.floor((parseDate(a) - parseDate(b)) / 86400000); }
+    function getSubmissionUrgency(item) {
+      if (!item.deadline) return null;
+      const diff = daysDiff(item.deadline, todayStr());
+      if (diff < 0) return `已过 ${Math.abs(diff)} 天`;
+      if (diff === 0) return '今天截止';
+      return `${diff} 天后`;
+    }
+
+    let recordActionState = { onEdit: null, onDelete: null };
+    function openRecordActionDialog(title, onEdit, onDelete, deleteLabel = '删除这条记录', subtitle = '你可以先修改，也可以直接删除这条记录。') {
+      recordActionState = { onEdit, onDelete };
+      const overlay = document.getElementById('recordActionOverlay');
+      document.getElementById('recordActionTitle').textContent = title || '记录操作';
+      document.getElementById('recordActionSubtitle').textContent = subtitle;
+      document.getElementById('recordActionDeleteBtn').textContent = `🗑️ ${deleteLabel}`;
+      overlay.classList.add('show');
+    }
+    function closeRecordActionDialog() {
+      const overlay = document.getElementById('recordActionOverlay');
+      if (overlay) overlay.classList.remove('show');
+      recordActionState = { onEdit: null, onDelete: null };
+    }
+    function bindActionDialog() {
+      const overlay = document.getElementById('recordActionOverlay');
+      if (!overlay) return;
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) closeRecordActionDialog();
+      });
+      document.getElementById('recordActionCancelBtn').addEventListener('click', closeRecordActionDialog);
+      document.getElementById('recordActionEditBtn').addEventListener('click', () => {
+        const fn = recordActionState.onEdit;
+        closeRecordActionDialog();
+        if (typeof fn === 'function') fn();
+      });
+      document.getElementById('recordActionDeleteBtn').addEventListener('click', () => {
+        const fn = recordActionState.onDelete;
+        closeRecordActionDialog();
+        if (typeof fn === 'function') fn();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeRecordActionDialog();
+      });
+    }
+
+    function renderNow() {
+      const now = new Date();
+      document.getElementById('currentDateTime').textContent = `${now.getFullYear()}年${now.getMonth()+1}月${now.getDate()}日 ${['星期日','星期一','星期二','星期三','星期四','星期五','星期六'][now.getDay()]} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    }
+
+    function initNav() {
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchSection(btn.dataset.target, btn));
+      });
+    }
+    function switchSection(target, btn) {
+      currentSection = target;
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(target).classList.add('active');
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      if (target === 'analytics-section') renderAnalytics();
+      if (target === 'settings-section') renderSettingsSection();
+    }
+
+    function renderDashboard() {
+      document.getElementById('heroFocus').textContent = `${dayFocusMinutes()} 分钟`;
+      document.getElementById('heroAttendance').textContent = String(countTodayAttendanceSegments());
+      document.getElementById('heroTasks').textContent = String(state.tasks.filter(t => t.status === 'done').length);
+      document.getElementById('heroSubs').textContent = String(state.submissions.length);
+
+      const todo = state.tasks.filter(t => t.status === 'todo').slice(0,5);
+      document.getElementById('dashboardTodoList').innerHTML = todo.length ? todo.map(t => `<div class="bg-white rounded-xl border border-gray-100 p-3"><div class="font-bold line-clamp-2">${escapeHtml(t.title)}</div><div class="text-xs text-calm-mute mt-1">创建于 ${t.createdAt?.slice(0,10) || '-'}</div></div>`).join('') : '<div class="text-sm text-calm-mute">暂无待办，去添加一个重要任务吧。</div>';
+
+      const recentFocus = [...state.focus.sessions].sort((a,b) => (b.createdTs||0) - (a.createdTs||0)).slice(0,4);
+      document.getElementById('dashboardFocusList').innerHTML = recentFocus.length ? recentFocus.map(s => `<div class="bg-white rounded-xl border border-gray-100 p-3"><div class="font-bold">${escapeHtml(s.title)}</div><div class="text-xs text-calm-mute mt-1">${s.date} · ${formatMinutes(s.minutes)}</div></div>`).join('') : '<div class="text-sm text-calm-mute">还没有专注记录。</div>';
+
+      const upcoming = [...state.submissions].filter(x => x.deadline).sort((a,b)=>a.deadline.localeCompare(b.deadline)).slice(0,5);
+      document.getElementById('dashboardDeadlineList').innerHTML = upcoming.length ? upcoming.map(s => `<div class="bg-white rounded-xl border border-gray-100 p-3"><div class="font-bold line-clamp-2">${escapeHtml(s.title)}</div><div class="text-xs text-calm-mute mt-1">${escapeHtml(s.venue || '未填写 venue')} · ${s.deadline} · ${getSubmissionUrgency(s) || ''}</div></div>`).join('') : '<div class="text-sm text-calm-mute">暂无投稿项目。</div>';
+
+      const mind = state.mood[todayStr()] || {};
+      const reflect = state.reflections[todayStr()] || {};
+      const moodMap = {great:'🤩 很棒', happy:'😊 开心', neutral:'😐 平静', tired:'🥲 累', sad:'😔 低落'};
+      document.getElementById('dashboardMindCard').innerHTML = `
+        <div class="bg-white rounded-xl border border-gray-100 p-3"><div class="font-bold">情绪：${moodMap[mind.mood] || '未记录'}</div><div class="text-xs text-calm-mute mt-1 line-clamp-2">${escapeHtml(mind.note || '今天还没有写情绪说明。')}</div></div>
+        <div class="bg-white rounded-xl border border-gray-100 p-3"><div class="font-bold">今日观心</div><div class="text-xs text-calm-mute mt-1 line-clamp-2">${escapeHtml(reflect.insight || reflect.proud || '还没有保存今日观心。')}</div></div>`;
+    }
+
+    function updateSidebarSummary() {
+      document.getElementById('sbFocus').textContent = `${dayFocusMinutes()} 分钟`;
+      document.getElementById('sbTask').textContent = state.focus.active?.title || '无';
+      const resistCount = state.phone.logs.filter(x => x.resisted).length;
+      document.getElementById('sbPhone').textContent = `${resistCount} 次`;
+      document.getElementById('sbHabit').textContent = `${dayHabitCompletion()}%`;
+      const activeSubs = state.submissions.filter(x => !['已接收','搁置/拒稿'].includes(x.stage)).length;
+      document.getElementById('sbSubmissions').textContent = String(activeSubs);
+    }
+
+    function bindAttendance() {
+      document.getElementById('btnWake').addEventListener('click', () => {
+        getDayAttendance().wake = timeNow();
+        saveState(); renderAll();
+      });
+      document.getElementById('btnSleep').addEventListener('click', () => {
+        getDayAttendance().sleep = timeNow();
+        saveState(); renderAll();
+      });
+      document.getElementById('clearWakeBtn').addEventListener('click', () => editWake());
+      document.getElementById('clearSleepBtn').addEventListener('click', () => editSleep());
+      document.querySelectorAll('.period-btn').forEach(btn => {
+        btn.addEventListener('click', () => handlePeriodAction(btn.dataset.period, btn.dataset.action));
+      });
+      document.getElementById('addLeaveBtn').addEventListener('click', addLeave);
+      document.getElementById('calPrev').addEventListener('click', () => { calendarCursor.setMonth(calendarCursor.getMonth()-1); renderAttendanceCalendar(); });
+      document.getElementById('calNext').addEventListener('click', () => { calendarCursor.setMonth(calendarCursor.getMonth()+1); renderAttendanceCalendar(); });
+    }
+    function handlePeriodAction(period, action) {
+      const day = getDayAttendance();
+      if (day.leave) { alert('今日已请假，若要打卡请先删除请假记录。'); return; }
+      const slot = day.periods[period];
+      if (action === 'start') {
+        if (slot.activeStart) { alert('这一时段已经在进行中。'); return; }
+        slot.activeStart = timeNow();
+      } else {
+        if (!slot.activeStart) { alert('还没有开始，不能结束。'); return; }
+        const end = timeNow();
+        slot.segments.push({ start: slot.activeStart, end, minutes: minutesBetween(slot.activeStart, end), qualified: slot.activeStart <= PERIOD_META[period].startStandard });
+        slot.activeStart = null;
+      }
+      saveState(); renderAll();
+    }
+    function addLeave() {
+      const date = document.getElementById('leaveDate').value || todayStr();
+      const type = document.getElementById('leaveType').value;
+      const reason = document.getElementById('leaveReason').value.trim();
+      if (!reason) { alert('请填写请假理由。'); return; }
+      const day = getDayAttendance(date);
+      day.leave = { type, reason, createdAt: dateTimeNow() };
+      saveState(); renderAll();
+      document.getElementById('leaveReason').value = '';
+    }
+    function removeLeave(date) {
+      const day = getDayAttendance(date);
+      day.leave = null;
+      saveState(); renderAll();
+    }
+    function renderAttendance() {
+      const day = getDayAttendance();
+      document.getElementById('wakeDisplay').textContent = day.wake || '-';
+      document.getElementById('sleepDisplay').textContent = day.sleep || '-';
+
+      ['morning','afternoon','evening'].forEach(period => {
+        const slot = day.periods[period];
+        const total = slot.segments.reduce((a,s)=>a+s.minutes,0);
+        document.getElementById(`periodTotal-${period}`).textContent = formatMinutes(total);
+        document.getElementById(`periodStatus-${period}`).innerHTML = slot.activeStart
+          ? `进行中：${slot.activeStart} 开始 <button onclick="clearPeriodActive('${period}')" class="ml-2 text-red-500 font-bold">清除进行中</button>`
+          : `已记录 ${slot.segments.length} 段`;
+      });
+
+      const list = document.getElementById('attendanceTodayList');
+      const rows = [];
+      Object.entries(day.periods).forEach(([key,val]) => {
+        const segHtml = val.segments.length ? val.segments.map((s,i) => `<div class="text-sm bg-white rounded-xl border border-gray-100 px-3 py-2 flex justify-between gap-3"><div><span>${PERIOD_META[key].label} 第${i+1}段 · ${s.start} - ${s.end}</span><span class="font-bold ml-2">${formatMinutes(s.minutes)}</span></div><button onclick="editAttendanceSegment('${todayStr()}','${key}',${i})" class="text-dopamine-sky font-bold shrink-0">修改</button></div>`).join('') : `<div class="text-sm text-calm-mute">${PERIOD_META[key].label} 暂无已完成记录</div>`;
+        rows.push(`<div class="rounded-2xl bg-gray-50 p-3 border border-gray-100"><div class="font-black mb-2">${PERIOD_META[key].label}</div>${segHtml}</div>`);
+      });
+      list.innerHTML = rows.join('');
+      document.getElementById('attendanceCountToday').textContent = countTodayAttendanceSegments();
+      document.getElementById('attendanceMinutesToday').textContent = formatMinutes(todayAttendanceMinutes());
+      document.getElementById('attendanceWakeStatus').textContent = day.wake ? (day.wake <= '09:00' ? '达标' : '偏晚') : '未记录';
+      document.getElementById('attendanceSleepStatus').textContent = day.sleep ? (day.sleep <= '23:30' ? '达标' : '偏晚') : '未记录';
+
+      const leaveEntries = Object.entries(state.attendance).filter(([,v]) => v.leave).sort((a,b)=>b[0].localeCompare(a[0]));
+      document.getElementById('leaveList').innerHTML = leaveEntries.length ? leaveEntries.map(([date,v]) => `<div class="bg-white rounded-xl border border-gray-100 p-3 flex items-start justify-between gap-3"><div><div class="font-black">${date} · ${escapeHtml(v.leave.type)}</div><div class="text-sm text-calm-mute mt-1">${escapeHtml(v.leave.reason)}</div></div><button onclick="editLeave('${date}')" class="text-dopamine-sky text-sm font-bold">修改</button></div>`).join('') : '<div class="text-sm text-calm-mute">暂无请假记录。</div>';
+      renderAttendanceCalendar();
+    }
+    function renderAttendanceCalendar() {
+      const y = calendarCursor.getFullYear(), m = calendarCursor.getMonth();
+      document.getElementById('calendarTitle').textContent = `${y}年${m+1}月`;
+      const first = new Date(y, m, 1);
+      const startWeek = first.getDay();
+      const days = new Date(y, m+1, 0).getDate();
+      const grid = document.getElementById('attendanceCalendarGrid');
+      let html = '';
+      for (let i=0; i<startWeek; i++) html += '<div class="calendar-cell rounded-2xl bg-transparent"></div>';
+      for (let d=1; d<=days; d++) {
+        const date = `${y}-${pad(m+1)}-${pad(d)}`;
+        const day = state.attendance[date];
+        const isToday = date === todayStr();
+        const segCount = day ? Object.values(day.periods).reduce((sum,p)=>sum+p.segments.length,0) : 0;
+        const wakeOk = day?.wake && day.wake <= '09:00';
+        const sleepOk = day?.sleep && day.sleep <= '23:30';
+        const isLeave = !!day?.leave;
+        html += `<div class="calendar-cell rounded-2xl p-2 border ${isToday ? 'border-dopamine-orange bg-orange-50' : 'border-gray-100 bg-white'}"><div class="font-black text-sm mb-2">${d}</div><div class="flex gap-1 flex-wrap">${wakeOk?'<span class="dot" style="background:#F9C74F"></span>':''}${sleepOk?'<span class="dot" style="background:#9B5DE5"></span>':''}${segCount>=2?'<span class="dot" style="background:#43AA8B"></span>':''}${isLeave?'<span class="dot" style="background:#4D9DE0"></span>':''}</div><div class="text-[11px] text-calm-mute mt-2">${isLeave ? escapeHtml(day.leave.type) : segCount ? `${segCount}段` : ''}</div></div>`;
+      }
+      grid.innerHTML = html;
+    }
+
+    function bindTimeBlocks() {
+      document.getElementById('addBlockBtn').addEventListener('click', addTimeBlock);
+      document.getElementById('quickAddBlockBtn').addEventListener('click', () => {
+        const form = document.getElementById('quickBlockForm');
+        form.hidden = !form.hidden;
+        document.getElementById('blockDate').value = selectedWeekDate || todayStr();
+      });
+      document.getElementById('prevWeekBtn').addEventListener('click', () => {
+        weekCursor = shiftWeek(weekCursor || todayStr(), -1);
+        selectedWeekDate = weekCursor;
+        renderCalendarSection();
+      });
+      document.getElementById('thisWeekBtn').addEventListener('click', () => {
+        weekCursor = getWeekStartMonday(todayStr());
+        selectedWeekDate = todayStr();
+        renderCalendarSection();
+      });
+      document.getElementById('nextWeekBtn').addEventListener('click', () => {
+        weekCursor = shiftWeek(weekCursor || todayStr(), 1);
+        selectedWeekDate = weekCursor;
+        renderCalendarSection();
+      });
+      document.getElementById('weekPickerBtn').addEventListener('click', () => {
+        const picked = prompt('跳转到哪一天所在周？格式 YYYY-MM-DD', selectedWeekDate || todayStr());
+        if (!picked) return;
+        const normalized = picked.trim();
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) { alert('日期格式应为 YYYY-MM-DD'); return; }
+        weekCursor = getWeekStartMonday(normalized);
+        selectedWeekDate = normalized;
+        document.getElementById('blockDate').value = normalized;
+        renderCalendarSection();
+      });
+      document.getElementById('blockDate').addEventListener('change', (e) => {
+        const date = e.target.value || todayStr();
+        weekCursor = getWeekStartMonday(date);
+        selectedWeekDate = date;
+        renderCalendarSection();
+      });
+      document.getElementById('finishDoingTaskBtn').addEventListener('click', () => {
+        const task = activeDoingTask();
+        if (!task) { alert('当前没有进行中的任务。'); return; }
+        finishDoingTask(task.id);
+      });
+      document.getElementById('cancelDoingTaskBtn').addEventListener('click', () => {
+        const task = activeDoingTask();
+        if (!task) { alert('当前没有进行中的任务。'); return; }
+        cancelDoingTask(task.id);
+      });
+    }
+    function addTimeBlock() {
+      const date = document.getElementById('blockDate').value || todayStr();
+      const start = document.getElementById('blockStart').value;
+      const end = document.getElementById('blockEnd').value;
+      const category = document.getElementById('blockCategory').value;
+      const title = document.getElementById('blockTitle').value.trim();
+      const notes = document.getElementById('blockNotes').value.trim();
+      if (!start || !end || !title) { alert('请至少填写日期、开始时间、结束时间和标题。'); return; }
+      if (!state.timeBlocks[date]) state.timeBlocks[date] = [];
+      state.timeBlocks[date].push({ id: uid('block'), date, start, end, category, title, notes, minutes: minutesBetween(start,end) });
+      state.timeBlocks[date].sort((a,b)=>a.start.localeCompare(b.start));
+      saveState();
+      document.getElementById('blockTitle').value = '';
+      document.getElementById('blockNotes').value = '';
+      weekCursor = getWeekStartMonday(date);
+      selectedWeekDate = date;
+      renderCalendarSection();
+    }
+    function removeTimeBlock(id, date) {
+      state.timeBlocks[date] = (state.timeBlocks[date] || []).filter(x => x.id !== id);
+      saveState(); renderCalendarSection();
+    }
+    function selectWeekDate(date) {
+      selectedWeekDate = date;
+      document.getElementById('blockDate').value = date;
+      renderCalendarSection();
+    }
+    function splitWeekEvent(event, weekSet) {
+      const startMinute = minutesOfDay(event.start);
+      const endMinute = minutesOfDay(event.end);
+      if (endMinute > startMinute) return weekSet.has(event.date) ? [event] : [];
+      if (endMinute === startMinute) {
+        if (!Number.isFinite(event.minutes) || event.minutes <= 0) return [];
+        return weekSet.has(event.date) ? [{ ...event, minutes: event.minutes }] : [];
+      }
+      const segments = [];
+      if (weekSet.has(event.date) && startMinute < 24 * 60) {
+        segments.push({ ...event, id: `${event.id}_a`, start: event.start, end: '23:59', minutes: 24 * 60 - startMinute });
+      }
+      const next = nextDate(event.date);
+      if (weekSet.has(next) && endMinute > 0) {
+        segments.push({ ...event, id: `${event.id}_b`, date: next, start: '00:00', end: event.end, minutes: endMinute });
+      }
+      return segments.filter(segment => minutesOfDay(segment.end) >= minutesOfDay(segment.start) && segment.minutes > 0);
+    }
+    function weekEvents(weekDates) {
+      const weekSet = new Set(weekDates);
+      const blockDates = [ymdFromDate(new Date(dateFromYmd(weekDates[0]).getTime() - 86400000)), ...weekDates];
+      const blockEvents = blockDates.flatMap(date => (state.timeBlocks[date] || []).flatMap(block => {
+        const meta = CATEGORY_META[block.category] || CATEGORY_META.study;
+        return splitWeekEvent({
+          id: block.id,
+          source: 'block',
+          date,
+          start: block.start,
+          end: block.end,
+          title: block.title,
+          notes: block.notes || '',
+          category: block.category || 'study',
+          label: meta.label,
+          icon: meta.icon,
+          color: meta.color,
+          minutes: Number.isFinite(block.minutes) ? block.minutes : minutesBetween(block.start, block.end)
+        }, weekSet);
+      }));
+      const focusEvents = (state.focus.sessions || []).flatMap(session => {
+        if (!session.date || !session.startTime || !session.endTime) return [];
+        return splitWeekEvent({
+          id: session.id,
+          source: 'focus',
+          date: session.date,
+          start: session.startTime,
+          end: session.endTime,
+          title: session.title || '专注记录',
+          notes: session.taskId ? '关联任务' : '独立专注',
+          category: 'focus',
+          label: FOCUS_WEEK_META.label,
+          icon: FOCUS_WEEK_META.icon,
+          color: FOCUS_WEEK_META.color,
+          minutes: Number.isFinite(session.minutes) ? session.minutes : minutesBetween(session.startTime, session.endTime)
+        }, weekSet);
+      });
+      return [...blockEvents, ...focusEvents];
+    }
+    function renderTimeWeekGrid(weekDates, events) {
+      const grid = document.getElementById('timeWeekGrid');
+      const selected = selectedWeekDate || todayStr();
+      const hours = Array.from({length: 17}, (_, i) => 7 + i);
+      const headHtml = `
+        <div class="time-week-grid-head">
+          <div class="time-week-head-spacer"></div>
+          ${weekDates.map((date, index) => `<button type="button" onclick="selectWeekDate('${date}')" class="time-week-day-head ${date === todayStr() ? 'time-week-today' : ''} ${date === selected ? 'time-week-selected' : ''} ${index >= 5 ? 'time-week-weekend' : ''}">
+            <strong>${WEEK_DAY_LABELS[index]}</strong>
+            <span>${formatDayShort(date)}</span>
+          </button>`).join('')}
+        </div>`;
+      const axisHtml = `<div class="time-week-time-axis">${hours.map(hour => {
+        const top = ((hour * 60 - WEEK_VISIBLE_START) / (WEEK_VISIBLE_END - WEEK_VISIBLE_START)) * 100;
+        return `<div class="time-week-hour" style="top:${top}%">${pad(hour)}:00</div>`;
+      }).join('')}</div>`;
+      const now = new Date();
+      const nowDate = todayStr();
+      const nowMinute = now.getHours() * 60 + now.getMinutes();
+      const nowTop = ((Math.min(Math.max(nowMinute, WEEK_VISIBLE_START), WEEK_VISIBLE_END) - WEEK_VISIBLE_START) / (WEEK_VISIBLE_END - WEEK_VISIBLE_START)) * 100;
+      const daysHtml = weekDates.map(date => {
+        const visibleEvents = events
+          .filter(event => event.date === date)
+          .map(event => ({ ...event, weekPosition: positionWeekBlock(event.start, event.end, event.minutes) }))
+          .filter(event => event.weekPosition.visible);
+        const dayEvents = assignWeekLanes(visibleEvents);
+        const blocks = dayEvents.map(event => {
+          const pos = event.weekPosition;
+          const left = (event.laneIndex / event.laneCount) * 100;
+          const width = 100 / event.laneCount;
+          const compact = pos.height < 5.6 ? 'time-week-compact' : '';
+          const bg = `${event.color}26`;
+          const border = `${event.color}66`;
+        return `<button type="button" onclick="event.stopPropagation(); selectWeekDate('${date}')" class="time-week-block ${compact}" style="top:${pos.top.toFixed(2)}%;height:${pos.height.toFixed(2)}%;left:calc(${left.toFixed(2)}% + 3px);width:calc(${width.toFixed(2)}% - 6px);background:${bg};border-color:${border};">
+            <div class="time-week-block-title">${event.icon} ${escapeHtml(event.title)}</div>
+            <div class="time-week-block-meta">${event.start} - ${event.end} · ${escapeHtml(event.label)} · ${formatMinutes(event.minutes)}</div>
+          </button>`;
+        }).join('');
+        const nowLine = date === nowDate ? `<div class="time-week-now-line" style="top:${nowTop}%"></div>` : '';
+        return `<div onclick="selectWeekDate('${date}')" class="time-week-day-col ${date === selected ? 'time-week-selected' : ''}" role="button" tabindex="0" aria-label="${date} 时间块">${nowLine}${blocks}</div>`;
+      }).join('');
+      grid.innerHTML = `${headHtml}<div class="time-week-grid-body">${axisHtml}${daysHtml}</div>`;
+    }
+    function renderWeekSidePanel(weekDates, events) {
+      const selected = selectedWeekDate || todayStr();
+      const total = events.reduce((sum, event) => sum + (event.minutes || 0), 0);
+      document.getElementById('weekTotalText').textContent = formatMinutes(total);
+      const grouped = events.reduce((acc, event) => {
+        const key = event.category || 'study';
+        if (!acc[key]) acc[key] = { label: event.label, color: event.color, minutes: 0 };
+        acc[key].minutes += event.minutes || 0;
+        return acc;
+      }, {});
+      const stats = Object.values(grouped).sort((a,b) => b.minutes - a.minutes);
+      document.getElementById('weekCategoryStats').innerHTML = stats.length ? stats.map(item => {
+        const pct = total ? Math.round(item.minutes / total * 100) : 0;
+        return `<div class="time-week-stat-row">
+          <div class="time-week-stat-name">${escapeHtml(item.label)}</div>
+          <strong>${formatMinutes(item.minutes)}</strong>
+          <div class="time-week-stat-bar"><span style="width:${pct}%;background:${item.color}"></span></div>
+        </div>`;
+      }).join('') : '<div class="time-week-empty">本周还没有时间记录。</div>';
+
+      const dayEvents = events.filter(event => event.date === selected).sort((a,b) => a.start.localeCompare(b.start));
+      const deadlines = state.submissions
+        .filter(item => item.deadline === selected)
+        .sort((a,b) => (a.title || '').localeCompare(b.title || ''));
+      document.getElementById('weekSelectedDateTitle').textContent = `${selected === todayStr() ? '今天' : formatDayShort(selected)} 明细`;
+      const eventRows = dayEvents.map(event => `<div class="time-week-detail-item">
+        <div class="time-week-detail-title">${event.icon} ${escapeHtml(event.title)}</div>
+        <div class="time-week-detail-meta">${event.start} - ${event.end} · ${escapeHtml(event.label)} · ${formatMinutes(event.minutes)}${event.notes ? ` · ${escapeHtml(event.notes)}` : ''}</div>
+      </div>`);
+      const deadlineRows = deadlines.map(item => `<div class="time-week-detail-item time-week-deadline">
+        <div class="time-week-detail-title">投稿截止：${escapeHtml(item.title || '未命名项目')}</div>
+        <div class="time-week-detail-meta">${escapeHtml(item.venue || '未填写 venue')} · ${escapeHtml(item.stage || '未标记阶段')}</div>
+      </div>`);
+      document.getElementById('weekDayDetails').innerHTML = [...eventRows, ...deadlineRows].join('') || '<div class="time-week-empty">这一天没有时间块、专注记录或投稿截止提醒。</div>';
+      renderWeekTimerPanel();
+    }
+    function renderWeekTimerPanel() {
+      const active = state.focus.active;
+      const display = document.getElementById('weekTimerDisplay');
+      const task = document.getElementById('weekTimerTask');
+      const ring = document.getElementById('weekTimerRing');
+      const finishBtn = document.getElementById('finishDoingTaskBtn');
+      const cancelBtn = document.getElementById('cancelDoingTaskBtn');
+      if (!display || !task || !ring) return;
+      if (!active) {
+        display.textContent = '00:00:00';
+        task.textContent = '暂无进行中的任务';
+        ring.classList.remove('time-week-active');
+        if (finishBtn) finishBtn.disabled = true;
+        if (cancelBtn) cancelBtn.disabled = true;
+        return;
+      }
+      const sec = Math.floor((Date.now() - active.startTs)/1000);
+      display.textContent = `${pad(Math.floor(sec/3600))}:${pad(Math.floor(sec%3600/60))}:${pad(sec%60)}`;
+      task.textContent = active.source === 'task' ? `任务计时：${active.title}` : `手动专注：${active.title}`;
+      ring.classList.add('time-week-active');
+      const taskDriven = active.source === 'task' && !!activeDoingTask();
+      if (finishBtn) finishBtn.disabled = !taskDriven;
+      if (cancelBtn) cancelBtn.disabled = !taskDriven;
+    }
+    function renderCalendarSection() {
+      if (!weekCursor) weekCursor = getWeekStartMonday(todayStr());
+      const weekDates = getWeekDates(weekCursor);
+      if (!selectedWeekDate || !weekDates.includes(selectedWeekDate)) {
+        selectedWeekDate = weekDates.includes(todayStr()) ? todayStr() : weekDates[0];
+      }
+      const dateInput = document.getElementById('blockDate');
+      if (dateInput) dateInput.value = selectedWeekDate;
+      document.getElementById('weekRangeTitle').textContent = formatWeekRange(weekDates);
+      const events = weekEvents(weekDates);
+      renderTimeWeekGrid(weekDates, events);
+      renderWeekSidePanel(weekDates, events);
+    }
+
+    function bindFocus() {
+      document.getElementById('addTaskBtn').addEventListener('click', addTask);
+      document.getElementById('startFocusBtn').addEventListener('click', startFocus);
+      document.getElementById('stopFocusBtn').addEventListener('click', stopFocus);
+      document.getElementById('discardFocusBtn').addEventListener('click', discardActiveFocus);
+      document.getElementById('addManualFocusBtn').addEventListener('click', addManualFocus);
+    }
+    function addTask() {
+      const title = document.getElementById('taskInput').value.trim();
+      if (!title) return;
+      state.tasks.unshift({ id: uid('task'), title, status: 'todo', createdAt: dateTimeNow(), completedAt: null });
+      document.getElementById('taskInput').value = '';
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function toggleTask(id, status) {
+      const task = state.tasks.find(t => t.id === id);
+      if (!task) return;
+      if (status === 'doing') {
+        startTaskTimer(id);
+        return;
+      }
+      if (status === 'done' && task.status === 'doing') {
+        finishDoingTask(id);
+        return;
+      }
+      if (status === 'todo' && task.status === 'doing') {
+        cancelDoingTask(id);
+        return;
+      }
+      task.status = status;
+      task.completedAt = status === 'done' ? dateTimeNow() : null;
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function activeDoingTask() {
+      return state.tasks.find(t => t.status === 'doing') || null;
+    }
+    function startTaskTimer(taskId) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const currentDoing = activeDoingTask();
+      if (currentDoing && currentDoing.id !== taskId) { alert('已有任务正在计时，请先完成或撤回当前任务。'); return; }
+      if (state.focus.active) {
+        const sameTaskDrivenActive = state.focus.active.source === 'task' && state.focus.active.taskId === taskId;
+        if (!sameTaskDrivenActive) { alert('已有进行中的专注，请先结束。'); return; }
+        task.status = 'doing';
+        task.startedAt = task.startedAt || state.focus.active.startedAt || dateTimeNow();
+        task.completedAt = null;
+        saveState(); renderFocusSection(); startFocusTicker(); renderAll();
+        return;
+      }
+      task.status = 'doing';
+      task.startedAt = dateTimeNow();
+      task.completedAt = null;
+      state.focus.active = { title: task.title, taskId: task.id, source: 'task', startTs: Date.now(), startedAt: dateTimeNow(), date: todayStr() };
+      saveState(); renderFocusSection(); startFocusTicker(); renderAll();
+    }
+    function finishDoingTask(taskId) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      const active = state.focus.active;
+      if (!active || active.taskId !== taskId || active.source !== 'task') {
+        task.status = 'done';
+        task.completedAt = dateTimeNow();
+        saveState(); renderFocusSection(); renderAll();
+        return;
+      }
+      const minutes = Math.max(1, Math.round((Date.now() - active.startTs) / 60000));
+      state.focus.sessions.unshift({ id: uid('focus'), title: active.title, taskId: active.taskId, date: active.date, startTime: active.startedAt.slice(11,16), endTime: timeNow(), minutes, createdTs: Date.now() });
+      state.focus.active = null;
+      task.status = 'done';
+      task.completedAt = dateTimeNow();
+      task.startedAt = null;
+      saveState(); renderFocusSection(); stopFocusTicker(); renderAll();
+    }
+    function cancelDoingTask(taskId) {
+      const task = state.tasks.find(t => t.id === taskId);
+      if (!task) return;
+      if (!confirm('撤回进行中的任务会丢弃本次正在计时的时长，确定继续吗？')) return;
+      if (state.focus.active?.taskId === taskId && state.focus.active?.source === 'task') {
+        state.focus.active = null;
+        stopFocusTicker();
+      }
+      task.status = 'todo';
+      task.startedAt = null;
+      task.completedAt = null;
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function deleteTask(id) {
+      if (state.focus.active?.taskId === id && state.focus.active?.source === 'task') {
+        state.focus.active = null;
+        stopFocusTicker();
+      }
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function doEditTask(id) {
+      const task = state.tasks.find(t => t.id === id);
+      if (!task) return;
+      const title = prompt('修改任务标题', task.title || '');
+      if (title === null) return;
+      task.title = title.trim() || task.title;
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function editTask(id) {
+      const task = state.tasks.find(t => t.id === id);
+      if (!task) return;
+      openRecordActionDialog(`任务 · ${task.title || '未命名任务'}`, () => doEditTask(id), () => deleteTask(id), '删除这条任务');
+    }
+
+    function startFocus() {
+      if (state.focus.active?.source === 'task') { alert('任务驱动计时器正在运行，请先完成或撤回当前任务。'); return; }
+      if (state.focus.active) { alert('已有进行中的专注，请先结束。'); return; }
+      const titleInput = document.getElementById('focusTitle').value.trim();
+      const taskId = document.getElementById('focusTaskLink').value;
+      const linkedTask = state.tasks.find(t => t.id === taskId);
+      const title = titleInput || linkedTask?.title || '无标题专注';
+      state.focus.active = { title, taskId: taskId || null, source: 'manual', startTs: Date.now(), startedAt: dateTimeNow(), date: todayStr() };
+      document.getElementById('focusTitle').value = '';
+      saveState(); renderFocusSection(); startFocusTicker(); renderAll();
+    }
+    function stopFocus() {
+      const active = state.focus.active;
+      if (!active) { alert('当前没有进行中的专注。'); return; }
+      if (active.source === 'task' && active.taskId) {
+        finishDoingTask(active.taskId);
+        return;
+      }
+      const minutes = Math.max(1, Math.round((Date.now() - active.startTs) / 60000));
+      state.focus.sessions.unshift({ id: uid('focus'), title: active.title, taskId: active.taskId, date: active.date, startTime: active.startedAt.slice(11,16), endTime: timeNow(), minutes, createdTs: Date.now() });
+      state.focus.active = null;
+      saveState(); renderFocusSection(); stopFocusTicker(); renderAll();
+    }
+    function addManualFocus() {
+      const date = document.getElementById('manualFocusDate').value || todayStr();
+      const title = document.getElementById('manualFocusTitle').value.trim();
+      const start = document.getElementById('manualFocusStart').value;
+      const end = document.getElementById('manualFocusEnd').value;
+      if (!title || !start || !end) { alert('请填写完整的补录信息。'); return; }
+      state.focus.sessions.unshift({ id: uid('focus'), title, taskId: null, date, startTime:start, endTime:end, minutes: minutesBetween(start,end), createdTs: Date.now() });
+      document.getElementById('manualFocusTitle').value = '';
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function discardActiveFocus() {
+      if (!state.focus.active) { alert('当前没有进行中的专注。'); return; }
+      if (state.focus.active.source === 'task' && state.focus.active.taskId) {
+        cancelDoingTask(state.focus.active.taskId);
+        return;
+      }
+      state.focus.active = null;
+      saveState(); renderFocusSection(); stopFocusTicker(); renderAll();
+    }
+    function deleteFocusSession(id) {
+      state.focus.sessions = state.focus.sessions.filter(s => s.id !== id);
+      saveState(); renderFocusSection(); renderAll();
+    }
+    function startFocusTicker() {
+      stopFocusTicker();
+      focusTicker = setInterval(renderFocusTimer, 1000);
+      renderFocusTimer();
+    }
+    function stopFocusTicker() {
+      if (focusTicker) clearInterval(focusTicker);
+      focusTicker = null;
+      renderFocusTimer();
+    }
+    function renderFocusTimer() {
+      const el = document.getElementById('focusTimerDisplay');
+      const badge = document.getElementById('focusLiveBadge');
+      if (!el || !badge) return;
+      if (!state.focus.active) {
+        el.textContent = '00:00:00';
+        badge.textContent = '暂无进行中的专注';
+        badge.classList.remove('pulse-ring');
+        renderWeekTimerPanel();
+        return;
+      }
+      const sec = Math.floor((Date.now() - state.focus.active.startTs)/1000);
+      el.textContent = `${pad(Math.floor(sec/3600))}:${pad(Math.floor(sec%3600/60))}:${pad(sec%60)}`;
+      badge.textContent = `进行中：${state.focus.active.title}`;
+      badge.classList.add('pulse-ring');
+      renderWeekTimerPanel();
+    }
+    function renderFocusSection() {
+      const select = document.getElementById('focusTaskLink');
+      const todoTasks = state.tasks.filter(t => t.status === 'todo');
+      select.innerHTML = `<option value="">不绑定任务</option>` + todoTasks.map(t => `<option value="${t.id}">${escapeHtml(t.title)}</option>`).join('');
+      const todoContainer = document.getElementById('taskTodoList');
+      const doneContainer = document.getElementById('taskDoneList');
+      const doingTasks = state.tasks.filter(t => t.status === 'doing');
+      const activeRows = [
+        ...doingTasks.map(t => `<div class="bg-orange-50 rounded-2xl border border-orange-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black text-dopamine-orange">${escapeHtml(t.title)}</div><div class="text-xs text-calm-mute mt-1">计时中 · ${formatDateTimeShort(t.startedAt)}</div></div><div class="flex gap-2"><button onclick="toggleTask('${t.id}','done')" class="text-dopamine-mint text-sm font-bold">完成</button><button onclick="toggleTask('${t.id}','todo')" class="text-red-500 text-sm font-bold">撤回</button></div></div></div>`),
+        ...todoTasks.map(t => `<div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black">${escapeHtml(t.title)}</div><div class="text-xs text-calm-mute mt-1">创建于 ${formatDateTimeShort(t.createdAt)}</div></div><div class="flex gap-2"><button onclick="toggleTask('${t.id}','doing')" class="text-dopamine-orange text-sm font-bold">开始</button><button onclick="toggleTask('${t.id}','done')" class="text-dopamine-mint text-sm font-bold">完成</button><button onclick="editTask('${t.id}')" class="text-dopamine-sky text-sm font-bold">修改</button></div></div></div>`)
+      ];
+      todoContainer.innerHTML = activeRows.length ? activeRows.join('') : '<div class="text-sm text-calm-mute">暂无待办或计时中任务。</div>';
+      const doneTasks = state.tasks.filter(t => t.status === 'done').slice(0,8);
+      doneContainer.innerHTML = doneTasks.length ? doneTasks.map(t => `<div class="bg-gray-50 rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black line-through text-calm-mute">${escapeHtml(t.title)}</div><div class="text-xs text-calm-mute mt-1">完成于 ${formatDateTimeShort(t.completedAt)}</div></div><div class="flex gap-2"><button onclick="toggleTask('${t.id}','todo')" class="text-dopamine-sky text-sm font-bold">撤回</button><button onclick="editTask('${t.id}')" class="text-dopamine-sky text-sm font-bold">修改</button></div></div></div>`).join('') : '<div class="text-sm text-calm-mute">还没有已完成任务。</div>';
+      const todaySessions = state.focus.sessions.filter(s => s.date === todayStr());
+      document.getElementById('todayFocusTotalText').textContent = `今日合计 ${formatMinutes(dayFocusMinutes())}`;
+      document.getElementById('focusSessionList').innerHTML = todaySessions.length ? todaySessions.map(s => `<div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black">${escapeHtml(s.title)}</div><div class="text-sm text-calm-mute mt-1">${s.startTime} - ${s.endTime} · ${formatMinutes(s.minutes)}</div></div><div class="flex items-center gap-2"><div class="text-xs bg-orange-50 text-dopamine-orange rounded-full px-3 py-1 font-bold">${s.taskId ? '关联任务' : '独立专注'}</div><button onclick="editFocusSession('${s.id}')" class="text-dopamine-sky text-sm font-bold shrink-0">修改</button></div></div></div>`).join('') : '<div class="text-sm text-calm-mute">今天还没有专注记录。</div>';
+      renderFocusTimer();
+    }
+
+    function bindLifestyle() {
+      document.getElementById('addHabitBtn').addEventListener('click', addHabit);
+      document.getElementById('addFoodBtn').addEventListener('click', addFood);
+      document.getElementById('habitDate').addEventListener('change', renderLifestyleSection);
+    }
+    function addHabit() {
+      const name = document.getElementById('newHabitInput').value.trim();
+      if (!name) return;
+      state.habits.list.push({ id: uid('habit'), name, icon: '✨' });
+      document.getElementById('newHabitInput').value = '';
+      saveState(); renderLifestyleSection(); renderAll();
+    }
+    function toggleHabit(id) {
+      const date = document.getElementById('habitDate').value || todayStr();
+      if (!state.habits.logs[date]) state.habits.logs[date] = {};
+      state.habits.logs[date][id] = !state.habits.logs[date][id];
+      saveState(); renderLifestyleSection(); renderAll();
+    }
+    function addFood() {
+      const date = document.getElementById('foodDate').value || todayStr();
+      const meal = document.getElementById('foodMeal').value;
+      const text = document.getElementById('foodText').value.trim();
+      if (!text) return;
+      state.foods.unshift({ id: uid('food'), date, meal, text, time: timeNow() });
+      document.getElementById('foodText').value = '';
+      saveState(); renderLifestyleSection(); renderAll();
+    }
+    function deleteFood(id) {
+      state.foods = state.foods.filter(f => f.id !== id);
+      saveState(); renderLifestyleSection(); renderAll();
+    }
+    function doEditFood(id) {
+      const item = state.foods.find(f => f.id === id);
+      if (!item) return;
+      const meal = prompt('修改餐次（早餐/午餐/晚餐/加餐）', item.meal || '早餐');
+      if (meal === null) return;
+      const text = prompt('修改饮食内容', item.text || '');
+      if (text === null) return;
+      item.meal = meal.trim() || item.meal;
+      item.text = text.trim() || item.text;
+      saveState(); renderLifestyleSection(); renderAll();
+    }
+    function editFood(id) {
+      const item = state.foods.find(f => f.id === id);
+      if (!item) return;
+      openRecordActionDialog(`饮食记录 · ${item.date} ${item.time}`, () => doEditFood(id), () => deleteFood(id), '删除这条饮食记录');
+    }
+
+    function renderLifestyleSection() {
+      const habitDate = document.getElementById('habitDate').value || todayStr();
+      document.getElementById('habitDate').value = habitDate;
+      const logs = state.habits.logs[habitDate] || {};
+      document.getElementById('habitList').innerHTML = state.habits.list.map(h => {
+        const checked = !!logs[h.id];
+        return `<label class="rounded-2xl border ${checked ? 'border-green-200 bg-green-50' : 'border-gray-100 bg-white'} p-4 flex items-center justify-between gap-3 cursor-pointer"><div class="flex items-center gap-3"><span class="text-2xl">${h.icon || '✨'}</span><span class="font-black">${escapeHtml(h.name)}</span></div><input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleHabit('${h.id}')" class="w-5 h-5"></label>`;
+      }).join('');
+      document.getElementById('foodList').innerHTML = state.foods.slice(0,12).map(f => `<div class="bg-white rounded-2xl border border-gray-100 p-4 flex justify-between gap-3"><div><div class="font-black">${escapeHtml(f.meal)} · ${escapeHtml(f.text)}</div><div class="text-sm text-calm-mute mt-1">${f.date} ${f.time}</div></div><button onclick="editFood('${f.id}')" class="text-dopamine-sky text-sm font-bold">修改</button></div>`).join('') || '<div class="text-sm text-calm-mute">暂无饮食记录。</div>';
+    }
+
+    function bindMind() {
+      document.querySelectorAll('.mood-emoji').forEach(btn => btn.addEventListener('click', () => selectMood(btn.dataset.mood)));
+      document.getElementById('saveMoodBtn').addEventListener('click', saveMood);
+      document.getElementById('deleteMoodBtn').addEventListener('click', deleteMoodForSelectedDate);
+      document.getElementById('saveReflectionBtn').addEventListener('click', saveReflection);
+      document.getElementById('clearReflectionBtn').addEventListener('click', clearReflectionInputs);
+      document.getElementById('deleteReflectionBtn').addEventListener('click', deleteReflectionForSelectedDate);
+      document.getElementById('mindDate').addEventListener('change', renderMindSection);
+    }
+    function selectMood(mood) {
+      document.querySelectorAll('.mood-emoji').forEach(el => el.classList.toggle('active', el.dataset.mood === mood));
+      document.body.dataset.selectedMood = mood;
+    }
+    function saveMood() {
+      const date = document.getElementById('mindDate').value || todayStr();
+      const mood = document.body.dataset.selectedMood;
+      if (!mood) { alert('先选一个心情表情吧。'); return; }
+      state.mood[date] = { mood, note: document.getElementById('moodNote').value.trim(), savedAt: dateTimeNow() };
+      saveState(); renderMindSection(); renderAll();
+    }
+    function saveReflection() {
+      const date = document.getElementById('mindDate').value || todayStr();
+      state.reflections[date] = {
+        proud: document.getElementById('reflectProud').value.trim(),
+        change: document.getElementById('reflectChange').value.trim(),
+        insight: document.getElementById('reflectInsight').value.trim(),
+        gratitude: document.getElementById('reflectGratitude').value.trim(),
+        savedAt: dateTimeNow()
+      };
+      saveState(); renderMindSection(); renderAll();
+    }
+    function deleteMoodForSelectedDate() {
+      const date = document.getElementById('mindDate').value || todayStr();
+      delete state.mood[date];
+      document.body.dataset.selectedMood = '';
+      saveState(); renderMindSection(); renderAll();
+    }
+    function deleteReflectionForSelectedDate() {
+      const date = document.getElementById('mindDate').value || todayStr();
+      delete state.reflections[date];
+      saveState(); renderMindSection(); renderAll();
+    }
+    function deleteMood(date) {
+      delete state.mood[date];
+      saveState(); renderMindSection(); renderAll();
+    }
+    function deleteReflection(date) {
+      delete state.reflections[date];
+      saveState(); renderMindSection(); renderAll();
+    }
+    function openMoodRecordActions(date) {
+      openRecordActionDialog(`情绪记录 · ${date}`, () => openMindDateForEdit(date), () => deleteMood(date), '删除这条情绪记录', '你可以跳转到该日期继续编辑，也可以直接删除。');
+    }
+    function openReflectionRecordActions(date) {
+      openRecordActionDialog(`观心记录 · ${date}`, () => openMindDateForEdit(date), () => deleteReflection(date), '删除这条观心记录', '你可以跳转到该日期继续编辑，也可以直接删除。');
+    }
+
+    function clearReflectionInputs() {
+      ['reflectProud','reflectChange','reflectInsight','reflectGratitude'].forEach(id => document.getElementById(id).value = '');
+    }
+    function renderMindSection() {
+      const date = document.getElementById('mindDate').value || todayStr();
+      document.getElementById('mindDate').value = date;
+      const mood = state.mood[date] || {};
+      document.querySelectorAll('.mood-emoji').forEach(el => el.classList.toggle('active', el.dataset.mood === mood.mood));
+      document.body.dataset.selectedMood = mood.mood || '';
+      document.getElementById('moodNote').value = mood.note || '';
+      const ref = state.reflections[date] || {};
+      document.getElementById('reflectProud').value = ref.proud || '';
+      document.getElementById('reflectChange').value = ref.change || '';
+      document.getElementById('reflectInsight').value = ref.insight || '';
+      document.getElementById('reflectGratitude').value = ref.gratitude || '';
+
+      const moodEntries = Object.entries(state.mood).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
+      const moodMap = {great:'🤩 很棒', happy:'😊 开心', neutral:'😐 平静', tired:'🥲 疲惫', sad:'😔 低落'};
+      document.getElementById('moodHistoryList').innerHTML = moodEntries.length ? moodEntries.map(([d,m]) => `<div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black">${d} · ${moodMap[m.mood] || '未标记'}</div><div class="text-sm text-calm-mute mt-2 line-clamp-2">${escapeHtml(m.note || '无文字说明')}</div></div><button onclick="openMoodRecordActions('${d}')" class="text-dopamine-sky text-sm font-bold shrink-0">修改</button></div></div>`).join('') : '<div class="text-sm text-calm-mute">暂无情绪记录。</div>';
+      const refEntries = Object.entries(state.reflections).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,5);
+      document.getElementById('reflectionHistoryList').innerHTML = refEntries.length ? refEntries.map(([d,r]) => `<div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black">${d}</div><div class="text-sm text-calm-mute mt-2">${escapeHtml(r.insight || r.proud || r.change || '无内容')}</div></div><button onclick="openReflectionRecordActions('${d}')" class="text-dopamine-sky text-sm font-bold shrink-0">修改</button></div></div>`).join('') : '<div class="text-sm text-calm-mute">暂无观心记录。</div>';
+    }
+
+    function bindPhone() {
+      document.getElementById('phoneResistBtn').addEventListener('click', () => addPhoneLog(true));
+      document.getElementById('phoneFailBtn').addEventListener('click', () => addPhoneLog(false));
+    }
+    function addPhoneLog(resisted) {
+      const reason = document.getElementById('phoneReason').value.trim() || '未填写原因';
+      state.phone.logs.unshift({ id: uid('phone'), date: todayStr(), time: timeNow(), reason, resisted });
+      document.getElementById('phoneReason').value = '';
+      saveState(); renderPhoneSection(); renderAll();
+    }
+    function deletePhoneLog(id) {
+      state.phone.logs = state.phone.logs.filter(x => x.id !== id);
+      saveState(); renderPhoneSection(); renderAll();
+    }
+    function renderPhoneSection() {
+      const resistCount = state.phone.logs.filter(x => x.resisted).length;
+      const failCount = state.phone.logs.filter(x => !x.resisted).length;
+      document.getElementById('phoneResistCount').textContent = resistCount;
+      document.getElementById('phoneFailCount').textContent = failCount;
+      document.getElementById('phoneLogList').innerHTML = state.phone.logs.slice(0,10).map(x => `<div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="flex items-start justify-between gap-3"><div><div class="font-black">${x.resisted ? '✅ 成功克制' : '🌀 没忍住'}</div><div class="text-sm text-calm-mute mt-1">${x.date} ${x.time} · ${escapeHtml(x.reason)}</div></div><div class="flex items-center gap-2"><span class="mini-badge ${x.resisted ? 'bg-purple-50 text-dopamine-purple' : 'bg-gray-100 text-calm-mute'}">${x.resisted ? '成功' : '失败'}</span><button onclick="editPhoneLog('${x.id}')" class="text-dopamine-sky text-sm font-bold shrink-0">修改</button></div></div></div>`).join('') || '<div class="text-sm text-calm-mute">暂无记录。</div>';
+      renderAchievements();
+    }
+    function computeAchievements() {
+      const focusMinutes = state.focus.sessions.reduce((a,b)=>a+(b.minutes||0),0);
+      const resistCount = state.phone.logs.filter(x => x.resisted).length;
+      const doneTasks = state.tasks.filter(t => t.status === 'done').length;
+      const reflectionCount = Object.keys(state.reflections).length;
+      const submissionCount = state.submissions.length;
+      const acceptedCount = state.submissions.filter(s => s.stage === '已接收').length;
+      const longestHabitStreak = getLongestHabitStreak();
+      const list = [
+        { id:'a1', title:'进入心流', desc:'累计专注 ≥ 300 分钟', unlocked: focusMinutes >= 300, icon:'fa-fire', color:'#FF8C42' },
+        { id:'a2', title:'深度工作者', desc:'累计专注 ≥ 1000 分钟', unlocked: focusMinutes >= 1000, icon:'fa-brain', color:'#FF6B8B' },
+        { id:'a3', title:'意志初现', desc:'成功克制手机 ≥ 10 次', unlocked: resistCount >= 10, icon:'fa-shield-heart', color:'#9B5DE5' },
+        { id:'a4', title:'手机克星', desc:'成功克制手机 ≥ 100 次', unlocked: resistCount >= 100, icon:'fa-ban', color:'#4D9DE0' },
+        { id:'a5', title:'执行闭环', desc:'完成任务 ≥ 20 个', unlocked: doneTasks >= 20, icon:'fa-list-check', color:'#43AA8B' },
+        { id:'a6', title:'日日精进', desc:'习惯连续打卡 ≥ 7 天', unlocked: longestHabitStreak >= 7, icon:'fa-seedling', color:'#A7C957' },
+        { id:'a7', title:'观心之人', desc:'完成观心记录 ≥ 7 天', unlocked: reflectionCount >= 7, icon:'fa-heart', color:'#F48C6E' },
+        { id:'a8', title:'开始投稿', desc:'建立第 1 个投稿项目', unlocked: submissionCount >= 1, icon:'fa-paper-plane', color:'#4D9DE0' },
+        { id:'a9', title:'论文被接收', desc:'至少 1 个项目进入已接收', unlocked: acceptedCount >= 1, icon:'fa-award', color:'#10b981' }
+      ];
+      return list;
+    }
+    function getLongestHabitStreak() {
+      const dates = Object.keys(state.habits.logs).sort();
+      let best = 0;
+      state.habits.list.forEach(h => {
+        let streak = 0, prev = null;
+        dates.forEach(date => {
+          const done = !!state.habits.logs[date]?.[h.id];
+          if (done) {
+            if (!prev || daysDiff(date, prev) === 1) streak += 1; else streak = 1;
+            prev = date;
+            best = Math.max(best, streak);
+          }
+        });
+      });
+      return best;
+    }
+    function renderAchievements() {
+      const list = computeAchievements();
+      const unlockedCount = list.filter(x => x.unlocked).length;
+      const total = list.length;
+      document.getElementById('achievementSummary').innerHTML = `
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">已解锁</div><div class="text-3xl font-black text-dopamine-orange">${unlockedCount}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">总成就</div><div class="text-3xl font-black text-dopamine-sky">${total}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">最长习惯 streak</div><div class="text-3xl font-black text-dopamine-mint">${getLongestHabitStreak()}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">专注总分钟</div><div class="text-3xl font-black text-dopamine-purple">${state.focus.sessions.reduce((a,b)=>a+(b.minutes||0),0)}</div></div>`;
+      document.getElementById('achievementList').innerHTML = list.map(a => `<div class="rounded-2xl p-5 border ${a.unlocked ? 'bg-white border-gray-100 shadow-soft' : 'bg-gray-50 border-gray-100 opacity-70'}"><div class="flex items-center gap-4"><div class="w-14 h-14 rounded-full flex items-center justify-center text-white text-xl" style="background:${a.unlocked ? a.color : '#cbd5e1'}"><i class="fa-solid ${a.unlocked ? a.icon : 'fa-lock'}"></i></div><div><div class="font-black">${a.title}</div><div class="text-sm text-calm-mute mt-1">${a.desc}</div></div></div></div>`).join('');
+    }
+
+    function bindSubmission() {
+      document.getElementById('addSubmissionBtn').addEventListener('click', addSubmission);
+    }
+    function addSubmission() {
+      const title = document.getElementById('subTitle').value.trim();
+      const venue = document.getElementById('subVenue').value.trim();
+      if (!title) { alert('至少填写题目/项目名。'); return; }
+      state.submissions.unshift({
+        id: uid('sub'),
+        title,
+        type: document.getElementById('subType').value,
+        priority: document.getElementById('subPriority').value,
+        venue,
+        deadline: document.getElementById('subDeadline').value || '',
+        stage: document.getElementById('subStage').value,
+        version: document.getElementById('subVersion').value.trim(),
+        notes: document.getElementById('subNotes').value.trim(),
+        createdAt: dateTimeNow()
+      });
+      ['subTitle','subVenue','subDeadline','subVersion','subNotes'].forEach(id => document.getElementById(id).value = '');
+      saveState(); renderSubmissionSection(); renderAll();
+    }
+    function updateSubmissionStage(id, stage) {
+      const item = state.submissions.find(x => x.id === id);
+      if (!item) return;
+      item.stage = stage;
+      saveState(); renderSubmissionSection(); renderAll();
+    }
+    function deleteSubmission(id) {
+      state.submissions = state.submissions.filter(x => x.id !== id);
+      saveState(); renderSubmissionSection(); renderAll();
+    }
+    function renderSubmissionSection() {
+      const total = state.submissions.length;
+      const active = state.submissions.filter(x => !['已接收','搁置/拒稿'].includes(x.stage)).length;
+      const accepted = state.submissions.filter(x => x.stage === '已接收').length;
+      const urgent = state.submissions.filter(x => x.deadline && daysDiff(x.deadline, todayStr()) >= 0 && daysDiff(x.deadline, todayStr()) <= 14).length;
+      document.getElementById('submissionTopStats').innerHTML = `
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">总项目</div><div class="text-3xl font-black text-dopamine-sky">${total}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">进行中</div><div class="text-3xl font-black text-dopamine-orange">${active}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">已接收</div><div class="text-3xl font-black text-dopamine-mint">${accepted}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">14天内截止</div><div class="text-3xl font-black text-dopamine-pink">${urgent}</div></div>`;
+
+      const columns = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','搁置/拒稿'];
+      document.getElementById('submissionBoard').innerHTML = columns.map(col => {
+        const items = state.submissions.filter(x => (x.stage === col) || (col === '写作中' && x.stage === '内审/合作者'));
+        return `<div class="kanban-col rounded-2xl bg-gray-50 border border-gray-100 p-4"><div class="flex items-center justify-between mb-4"><div class="font-black">${col}</div><span class="mini-badge bg-white text-calm-mute">${items.length}</span></div><div class="space-y-3">${items.length ? items.map(item => renderSubmissionCard(item)).join('') : '<div class="text-sm text-calm-mute">暂无项目</div>'}</div></div>`;
+      }).join('');
+    }
+    function renderSubmissionCard(item) {
+      const urgency = getSubmissionUrgency(item);
+      const borderColor = SUBMISSION_STAGE_COLOR[item.stage] || '#cbd5e1';
+      return `<div class="bg-white rounded-2xl border p-4" style="border-color:${borderColor}"><div class="flex items-start justify-between gap-3"><div><div class="font-black line-clamp-2">${escapeHtml(item.title)}</div><div class="text-sm text-calm-mute mt-1">${escapeHtml(item.venue || '未填写 venue')}</div></div><button onclick="editSubmission('${item.id}')" class="text-dopamine-sky text-sm font-bold">修改</button></div><div class="flex flex-wrap gap-2 mt-3 text-xs">${item.type ? `<span class="mini-badge bg-sky-50 text-dopamine-sky">${escapeHtml(item.type)}</span>` : ''}${item.priority ? `<span class="mini-badge bg-orange-50 text-dopamine-orange">${escapeHtml(item.priority)}优先级</span>` : ''}${item.version ? `<span class="mini-badge bg-purple-50 text-dopamine-purple">${escapeHtml(item.version)}</span>` : ''}</div><div class="text-sm mt-3">${item.deadline ? `截止：<span class="font-bold">${item.deadline}</span>${urgency ? ` <span class="text-calm-mute">(${urgency})</span>` : ''}` : '<span class="text-calm-mute">未设置截止日期</span>'}</div>${item.notes ? `<div class="text-sm text-calm-mute mt-2 line-clamp-2">${escapeHtml(item.notes)}</div>` : ''}<div class="mt-3"><select onchange="updateSubmissionStage('${item.id}', this.value)" class="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none">${['选题中','写作中','内审/合作者','待投稿','已投稿','审稿中','返修中','已接收','搁置/拒稿'].map(stage => `<option value="${stage}" ${item.stage===stage?'selected':''}>${stage}</option>`).join('')}</select></div></div>`;
+    }
+
+    function bindAnalytics() {
+      document.querySelectorAll('.range-btn').forEach(btn => btn.addEventListener('click', () => {
+        analyticsRangeDays = Number(btn.dataset.days);
+        document.querySelectorAll('.range-btn').forEach(b => { b.classList.remove('bg-dopamine-orange','text-white'); b.classList.add('bg-gray-100'); });
+        btn.classList.add('bg-dopamine-orange','text-white');
+        btn.classList.remove('bg-gray-100');
+        renderAnalytics();
+      }));
+    }
+    function getRecentDates(days) {
+      return Array.from({length: days}, (_,i)=>todayStr(-(days-1-i)));
+    }
+    function renderAnalytics() {
+      const dates = getRecentDates(analyticsRangeDays);
+      const focusSeries = dates.map(d => dayFocusMinutes(d));
+      const attendanceSeries = dates.map(d => countTodayAttendanceSegments(d));
+      const phoneSeries = dates.map(d => state.phone.logs.filter(x => x.resisted && x.date === d).length);
+      const habitSeries = dates.map(d => dayHabitCompletion(d));
+      const submittedStageCounts = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','搁置/拒稿'].map(stage => state.submissions.filter(x => x.stage === stage || (stage==='写作中' && x.stage === '内审/合作者')).length);
+
+      document.getElementById('analyticsSummary').innerHTML = `
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">区间总专注</div><div class="text-3xl font-black text-dopamine-orange">${focusSeries.reduce((a,b)=>a+b,0)}</div><div class="text-xs text-calm-mute mt-1">分钟</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">平均日习惯完成</div><div class="text-3xl font-black text-dopamine-mint">${Math.round(habitSeries.reduce((a,b)=>a+b,0)/(habitSeries.length||1))}%</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">成功克制总数</div><div class="text-3xl font-black text-dopamine-purple">${phoneSeries.reduce((a,b)=>a+b,0)}</div></div>
+        <div class="bg-white rounded-2xl border border-gray-100 p-4"><div class="text-calm-mute text-sm">出勤总段数</div><div class="text-3xl font-black text-dopamine-sky">${attendanceSeries.reduce((a,b)=>a+b,0)}</div></div>`;
+
+      buildChart('focus', 'focusChart', 'line', dates.map(d=>d.slice(5)), [{ label:'专注分钟', data:focusSeries, borderColor:'#FF8C42', backgroundColor:'rgba(255,140,66,.15)', fill:true, tension:.3 }]);
+      buildChart('attendance', 'attendanceChart', 'bar', dates.map(d=>d.slice(5)), [{ label:'出勤段数', data:attendanceSeries, backgroundColor:'rgba(67,170,139,.7)' }]);
+      buildChart('phone', 'phoneChart', 'line', dates.map(d=>d.slice(5)), [{ label:'成功克制次数', data:phoneSeries, borderColor:'#9B5DE5', backgroundColor:'rgba(155,93,229,.12)', fill:true, tension:.35 }]);
+      buildChart('habit', 'habitChart', 'bar', dates.map(d=>d.slice(5)), [{ label:'习惯完成度 %', data:habitSeries, backgroundColor:'rgba(167,201,87,.7)' }], { max:100 });
+      buildChart('submission', 'submissionChart', 'bar', ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','搁置/拒稿'], [{ label:'项目数', data:submittedStageCounts, backgroundColor:['#9B5DE5','#FF8C42','#4D9DE0','#43AA8B','#3b82f6','#f97316','#10b981','#9ca3af'] }]);
+    }
+    function buildChart(key, canvasId, type, labels, datasets, yCfg={}) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      if (charts[key]) charts[key].destroy();
+      charts[key] = new Chart(ctx, {
+        type,
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: true } },
+          scales: { y: { beginAtZero: true, ...(yCfg.max ? { max:yCfg.max } : {}) } }
+        }
+      });
+    }
+
+    function renderAll() {
+      saveState();
+      renderNow();
+      renderDashboard();
+      updateSidebarSummary();
+      renderAttendance();
+      renderCalendarSection();
+      renderFocusSection();
+      renderLifestyleSection();
+      renderMindSection();
+      renderPhoneSection();
+      renderSubmissionSection();
+      renderSettingsSection();
+      if (currentSection === 'analytics-section') renderAnalytics();
+    }
+
+
+    function normalizeFocusActive(active) {
+      if (!active || typeof active !== 'object') return null;
+      const startTs = Number(active.startTs);
+      const startedAt = typeof active.startedAt === 'string' ? active.startedAt.trim() : '';
+      if (!Number.isFinite(startTs) || startTs <= 0 || !startedAt) return null;
+      return {
+        ...active,
+        source: active.source || 'manual',
+        startTs,
+        startedAt
+      };
+    }
+    function normalizeFocusState(focus) {
+      const source = focus && typeof focus === 'object' ? focus : {};
+      return {
+        active: normalizeFocusActive(source.active),
+        sessions: Array.isArray(source.sessions) ? source.sessions : []
+      };
+    }
+    function normalizeTask(task) {
+      if (!task || typeof task !== 'object') return null;
+      const title = typeof task.title === 'string' && task.title.trim() ? task.title : '未命名任务';
+      const status = ['todo','doing','done'].includes(task.status) ? task.status : 'todo';
+      const createdAt = typeof task.createdAt === 'string' && task.createdAt
+        ? task.createdAt
+        : (typeof task.startedAt === 'string' && task.startedAt)
+          ? task.startedAt
+          : (typeof task.completedAt === 'string' && task.completedAt)
+            ? task.completedAt
+            : dateTimeNow();
+      return {
+        ...task,
+        id: typeof task.id === 'string' && task.id ? task.id : uid('task'),
+        title,
+        status,
+        createdAt,
+        startedAt: typeof task.startedAt === 'string' && task.startedAt ? task.startedAt : null,
+        completedAt: typeof task.completedAt === 'string' && task.completedAt ? task.completedAt : null
+      };
+    }
+    function sanitizeImportedState(parsed) {
+      return {
+        attendance: parsed?.attendance || {},
+        timeBlocks: parsed?.timeBlocks || {},
+        tasks: Array.isArray(parsed?.tasks) ? parsed.tasks.map(normalizeTask).filter(Boolean) : [],
+        focus: normalizeFocusState(parsed?.focus),
+        habits: parsed?.habits && typeof parsed.habits === 'object' ? { list: Array.isArray(parsed.habits.list) && parsed.habits.list.length ? parsed.habits.list : DEFAULT_HABITS.slice(), logs: parsed.habits.logs || {} } : { list: DEFAULT_HABITS.slice(), logs: {} },
+        foods: Array.isArray(parsed?.foods) ? parsed.foods : [],
+        mood: parsed?.mood || {},
+        reflections: parsed?.reflections || {},
+        phone: parsed?.phone && typeof parsed.phone === 'object' ? { logs: Array.isArray(parsed.phone.logs) ? parsed.phone.logs : [] } : { logs: [] },
+        submissions: Array.isArray(parsed?.submissions) ? parsed.submissions : []
+      };
+    }
+    function snapshotStateJson(pretty = true) {
+      return JSON.stringify(state, null, pretty ? 2 : 0);
+    }
+    function storageUsageBytes() {
+      try {
+        return new Blob([snapshotStateJson(false)]).size;
+      } catch (e) {
+        return snapshotStateJson(false).length;
+      }
+    }
+    function formatBytes(bytes) {
+      if (bytes < 1024) return `${bytes} B`;
+      if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+      return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+    }
+    function countTimeBlocks() {
+      return Object.values(state.timeBlocks || {}).reduce((sum, list) => sum + ((Array.isArray(list) ? list.length : 0)), 0);
+    }
+    function countMoodEntries() { return Object.keys(state.mood || {}).length; }
+    function countReflectionEntries() { return Object.keys(state.reflections || {}).length; }
+    function renderSettingsSection() {
+      const focusCount = state.focus?.sessions?.length || 0;
+      const blockCount = countTimeBlocks();
+      const taskCount = state.tasks?.length || 0;
+      const submissionCount = state.submissions?.length || 0;
+      const foodCount = state.foods?.length || 0;
+      const phoneCount = state.phone?.logs?.length || 0;
+      document.getElementById('settingsStorageKey').textContent = STORAGE_KEY;
+      document.getElementById('settingsStorageBytes').textContent = formatBytes(storageUsageBytes());
+      document.getElementById('settingsCountFocus').textContent = String(focusCount);
+      document.getElementById('settingsCountBlocks').textContent = String(blockCount);
+      document.getElementById('settingsCountWork').textContent = `${taskCount} / ${submissionCount}`;
+      document.getElementById('settingsCountLife').textContent = `${countMoodEntries()} / ${countReflectionEntries()} / ${foodCount} / ${phoneCount}`;
+      const preview = snapshotStateJson(true);
+      const previewEl = document.getElementById('settingsPreviewTextarea');
+      if (previewEl) previewEl.value = preview;
+    }
+    function downloadBackup() {
+      const raw = snapshotStateJson(true);
+      const blob = new Blob([raw], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `phd_workspace_backup_${todayStr().replaceAll('-', '')}_${String(Date.now()).slice(-6)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+      const hint = document.getElementById('settingsExportHint');
+      if (hint) hint.textContent = `已导出备份：${a.download}`;
+    }
+    async function copyBackupToClipboard() {
+      const raw = snapshotStateJson(true);
+      try {
+        await navigator.clipboard.writeText(raw);
+        const hint = document.getElementById('settingsExportHint');
+        if (hint) hint.textContent = '已复制 JSON 到剪贴板。';
+      } catch (e) {
+        alert('复制失败，请改用“下载 JSON 备份”。');
+      }
+    }
+    function importStateFromRaw(raw) {
+      let parsed;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        alert('导入失败：JSON 格式无效。');
+        return;
+      }
+      if (!confirm('导入会覆盖当前所有数据。建议先导出当前备份。现在继续吗？')) return;
+      const next = sanitizeImportedState(parsed);
+      Object.keys(state).forEach(k => delete state[k]);
+      Object.assign(state, next);
+      saveState();
+      renderAll();
+      if (state.focus?.active) startFocusTicker(); else stopFocusTicker();
+      const hint = document.getElementById('settingsImportHint');
+      if (hint) hint.textContent = '导入完成，当前页面已刷新为新数据。';
+      alert('导入成功。');
+    }
+    function restoreDoingTaskToTodo(task) {
+      if (!task || task.status !== 'doing') return;
+      task.status = 'todo';
+      task.startedAt = null;
+      task.completedAt = null;
+    }
+    function restoreLinkedDoingTask(active) {
+      if (!active?.taskId) return;
+      restoreDoingTaskToTodo(state.tasks.find(task => task.id === active.taskId));
+    }
+    function clearRunningStates() {
+      restoreLinkedDoingTask(state.focus?.active);
+      (state.tasks || []).forEach(restoreDoingTaskToTodo);
+      state.focus.active = null;
+      Object.values(state.attendance || {}).forEach(day => {
+        ['morning','afternoon','evening'].forEach(period => {
+          if (day?.periods?.[period]) day.periods[period].activeStart = null;
+        });
+      });
+      stopFocusTicker();
+      saveState();
+      renderAll();
+      alert('已清除所有进行中状态，历史记录保留。');
+    }
+    function resetTodayRunningStates() {
+      const day = getDayAttendance(todayStr());
+      ['morning','afternoon','evening'].forEach(period => {
+        if (day?.periods?.[period]) day.periods[period].activeStart = null;
+      });
+      if (state.focus?.active?.date === todayStr()) {
+        restoreLinkedDoingTask(state.focus.active);
+        state.focus.active = null;
+        stopFocusTicker();
+      }
+      saveState();
+      renderAll();
+      alert('已重置今天仍在进行中的项目。');
+    }
+    function clearAllData() {
+      if (!confirm('确定要清空全部数据吗？此操作不可撤销。')) return;
+      if (!confirm('再次确认：这会删除当前存储键下的所有记录。')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      stopFocusTicker();
+      const reset = sanitizeImportedState({});
+      Object.keys(state).forEach(k => delete state[k]);
+      Object.assign(state, reset);
+      saveState();
+      renderAll();
+      alert('已清空全部数据。');
+    }
+    function bindSettings() {
+      document.getElementById('downloadBackupBtn').addEventListener('click', downloadBackup);
+      document.getElementById('copyBackupBtn').addEventListener('click', copyBackupToClipboard);
+      document.getElementById('importFileBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+      document.getElementById('importFileInput').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => importStateFromRaw(String(reader.result || ''));
+        reader.readAsText(file, 'utf-8');
+        e.target.value = '';
+      });
+      document.getElementById('importTextareaBtn').addEventListener('click', () => {
+        const raw = document.getElementById('importJsonTextarea').value.trim();
+        if (!raw) { alert('请先粘贴 JSON 文本。'); return; }
+        importStateFromRaw(raw);
+      });
+      document.getElementById('clearRunningStateBtn').addEventListener('click', clearRunningStates);
+      document.getElementById('resetTodayBtn').addEventListener('click', resetTodayRunningStates);
+      document.getElementById('clearAllDataBtn').addEventListener('click', clearAllData);
+      document.getElementById('refreshPreviewBtn').addEventListener('click', renderSettingsSection);
+    }
+
+    function initDefaults() {
+      const today = todayStr();
+      ['blockDate','manualFocusDate','habitDate','foodDate','mindDate','leaveDate'].forEach(id => document.getElementById(id).value = today);
+    }
+
+    window.toggleTask = toggleTask;
+    window.deleteTask = deleteTask;
+    window.startTaskTimer = startTaskTimer;
+    window.finishDoingTask = finishDoingTask;
+    window.cancelDoingTask = cancelDoingTask;
+    window.selectWeekDate = selectWeekDate;
+    window.toggleHabit = toggleHabit;
+    window.deleteFood = deleteFood;
+    window.removeLeave = removeLeave;
+    window.removeTimeBlock = removeTimeBlock;
+    window.updateSubmissionStage = updateSubmissionStage;
+    window.deleteSubmission = deleteSubmission;
+    window.clearWake = clearWake;
+    window.clearSleep = clearSleep;
+    window.deleteAttendanceSegment = deleteAttendanceSegment;
+    window.clearPeriodActive = clearPeriodActive;
+    window.deleteFocusSession = deleteFocusSession;
+    window.deleteMood = deleteMood;
+    window.deleteReflection = deleteReflection;
+    window.deletePhoneLog = deletePhoneLog;
+    window.editWake = editWake;
+    window.editSleep = editSleep;
+    window.editAttendanceSegment = editAttendanceSegment;
+    window.editTimeBlock = editTimeBlock;
+    window.editLeave = editLeave;
+    window.editFocusSession = editFocusSession;
+    window.openMindDateForEdit = openMindDateForEdit;
+    window.editPhoneLog = editPhoneLog;
+    window.editSubmission = editSubmission;
+    window.editTask = editTask;
+    window.editFood = editFood;
+    window.openMoodRecordActions = openMoodRecordActions;
+    window.openReflectionRecordActions = openReflectionRecordActions;
+
+    function init() {
+      initDefaults();
+      initNav();
+      bindAttendance();
+      bindTimeBlocks();
+      bindFocus();
+      bindLifestyle();
+      bindMind();
+      bindPhone();
+      bindSubmission();
+      bindAnalytics();
+      bindSettings();
+      bindActionDialog();
+      renderAll();
+      renderNow();
+      setInterval(renderNow, 60000);
+      if (state.focus.active) startFocusTicker();
+    }
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
