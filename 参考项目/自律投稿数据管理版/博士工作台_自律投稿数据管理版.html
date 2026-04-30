@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PhD Master Workspace · 综合版</title>
+  <title>寸阴台 · 自律投稿数据管理版</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -88,6 +88,87 @@
     ::-webkit-scrollbar-thumb { background: rgba(255,140,66,.4); border-radius: 999px; }
     ::-webkit-scrollbar-track { background: rgba(255,255,255,.6); }
 
+    .app-shell {
+      max-width: 1760px;
+      margin: 0 auto;
+      padding: 1.25rem 1rem 2rem;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: .85rem 1rem;
+      margin-bottom: 1.25rem;
+      position: sticky;
+      top: .75rem;
+      z-index: 30;
+    }
+    .brand-mark {
+      width: 2.65rem;
+      height: 2.65rem;
+      border-radius: 1rem;
+      flex: 0 0 auto;
+      background: linear-gradient(135deg, #FF8C42, #FF6B8B);
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 24px -16px rgba(255,107,139,.7);
+    }
+    .brand-copy {
+      flex: 0 0 auto;
+      min-width: max-content;
+    }
+    .brand-copy h1 {
+      font-size: 1.28rem;
+      line-height: 1.15;
+      font-weight: 950;
+      letter-spacing: .04em;
+      background: linear-gradient(90deg, #d9782d, #cf4f74);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .top-nav {
+      display: flex;
+      align-items: center;
+      gap: .42rem;
+      overflow-x: auto;
+      overflow-y: hidden;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: .15rem .05rem .25rem;
+      white-space: nowrap;
+      scrollbar-width: thin;
+    }
+    .top-nav .nav-btn {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .45rem;
+      min-height: 2.3rem;
+      padding: 0 .9rem;
+      border-radius: 999px;
+      color: #5d6070;
+      font-size: .9rem;
+      font-weight: 900;
+      background: rgba(255,255,255,.68);
+      border: 1px solid rgba(229,232,240,.86);
+    }
+    .top-nav .nav-btn:hover {
+      background: rgba(255,255,255,.94);
+    }
+    .top-nav .nav-btn.active {
+      color: white;
+      border-color: transparent;
+      background: linear-gradient(90deg, #FF8C42, #FF6B8B);
+      box-shadow: 0 10px 20px -12px rgba(255,107,139,.62);
+    }
+    .main-content {
+      width: 100%;
+    }
+
     .record-action-overlay {
       position: fixed;
       inset: 0;
@@ -121,8 +202,8 @@
 
     .time-week-shell {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 340px;
-      gap: 1rem;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 1.15rem;
       align-items: start;
     }
     .time-week-main,
@@ -140,9 +221,9 @@
     .time-week-toolbar {
       display: flex;
       justify-content: space-between;
-      gap: 1rem;
+      gap: .8rem;
       align-items: center;
-      padding: 1.1rem 1.2rem;
+      padding: .82rem 1rem;
       background: linear-gradient(135deg, rgba(241,250,244,.9), rgba(247,242,255,.82));
       border-bottom: 1px solid rgba(255,255,255,.72);
     }
@@ -157,8 +238,8 @@
       display: inline-flex;
       align-items: center;
       gap: .55rem;
-      margin-top: .22rem;
-      font-size: 1.45rem;
+      margin-top: .16rem;
+      font-size: 1.22rem;
       line-height: 1.2;
       font-weight: 950;
       color: #22223b;
@@ -168,18 +249,18 @@
       display: flex;
       align-items: center;
       flex-wrap: wrap;
-      gap: .55rem;
+      gap: .42rem;
     }
     .time-week-icon-btn,
     .time-week-pill-btn,
     .time-week-primary-btn {
-      min-height: 2.45rem;
+      min-height: 2.25rem;
       border-radius: 999px;
       font-weight: 900;
       transition: transform .16s ease, box-shadow .16s ease, opacity .16s ease;
     }
     .time-week-icon-btn {
-      width: 2.45rem;
+      width: 2.25rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -188,13 +269,13 @@
       border: 1px solid rgba(211,215,226,.9);
     }
     .time-week-pill-btn {
-      padding: 0 .95rem;
+      padding: 0 .82rem;
       background: rgba(255,255,255,.86);
       color: #454064;
       border: 1px solid rgba(211,215,226,.9);
     }
     .time-week-primary-btn {
-      padding: 0 1rem;
+      padding: 0 .9rem;
       color: white;
       background: linear-gradient(135deg, #43aa8b, #7d5fff);
       box-shadow: 0 12px 28px -16px rgba(75, 72, 182, .7);
@@ -358,8 +439,8 @@
       gap: 1rem;
     }
     .time-week-panel {
-      border-radius: 22px;
-      padding: 1rem;
+      border-radius: 18px;
+      padding: .85rem;
     }
     .time-week-panel-label {
       color: #7a8191;
@@ -382,9 +463,9 @@
       color: #22223b;
     }
     .time-week-timer-ring {
-      width: 190px;
-      height: 190px;
-      margin: 1rem auto;
+      width: 152px;
+      height: 152px;
+      margin: .8rem auto;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -404,15 +485,15 @@
     }
     .time-week-timer-value {
       color: #22223b;
-      font-size: 1.8rem;
+      font-size: 1.46rem;
       line-height: 1;
       font-weight: 950;
     }
     .time-week-timer-task {
-      width: 128px;
+      width: 112px;
       margin: .45rem auto 0;
       color: #667085;
-      font-size: .76rem;
+      font-size: .7rem;
       line-height: 1.25;
       font-weight: 800;
     }
@@ -517,6 +598,27 @@
       }
     }
     @media (max-width: 760px) {
+      .app-shell {
+        padding: .75rem .65rem 1.5rem;
+      }
+      .top-bar {
+        gap: .65rem;
+        padding: .65rem;
+        top: .5rem;
+      }
+      .brand-mark {
+        width: 2.35rem;
+        height: 2.35rem;
+        border-radius: .85rem;
+      }
+      .brand-copy h1 {
+        font-size: 1.08rem;
+      }
+      .top-nav .nav-btn {
+        min-height: 2.15rem;
+        padding: 0 .72rem;
+        font-size: .84rem;
+      }
       .time-week-toolbar,
       .time-week-actions,
       .time-week-timer-actions {
@@ -545,50 +647,38 @@
   </style>
 </head>
 <body class="font-sans text-calm-ink">
-  <div class="max-w-[1600px] mx-auto px-4 py-6 lg:px-6">
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <aside class="lg:col-span-3 xl:col-span-2">
-        <div class="soft-card p-5 sticky top-4">
-          <div class="mb-6">
-            <div class="flex items-center gap-3 mb-2">
-              <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-dopamine-orange to-dopamine-pink text-white flex items-center justify-center shadow-soft">
-                <i class="fa-solid fa-graduation-cap text-xl"></i>
-              </div>
-              <div>
-                <h1 class="text-xl font-black tracking-tight bg-gradient-to-r from-dopamine-orange to-dopamine-pink bg-clip-text text-transparent">PhD Master Workspace</h1>
-                <p class="text-xs text-calm-mute">整合版 · 自律 / 科研 / 投稿</p>
-              </div>
-            </div>
-            <div id="currentDateTime" class="text-sm text-calm-mute bg-orange-50 rounded-xl px-3 py-2 border border-orange-100"></div>
-          </div>
+  <div class="app-shell">
+    <header class="top-bar soft-card">
+      <div class="brand-mark" aria-hidden="true">
+        <i class="fa-solid fa-hourglass-half text-lg"></i>
+      </div>
+      <div class="brand-copy">
+        <h1>寸阴台</h1>
+      </div>
+      <nav class="top-nav" aria-label="主导航">
+        <button class="nav-btn active" data-target="dashboard-section"><span>首页</span><i class="fa-solid fa-house"></i></button>
+        <button class="nav-btn" data-target="attendance-section"><span>起居</span><i class="fa-regular fa-clock"></i></button>
+        <button class="nav-btn" data-target="calendar-section"><span>周历</span><i class="fa-regular fa-calendar"></i></button>
+        <button class="nav-btn" data-target="focus-section"><span>专注</span><i class="fa-solid fa-bullseye"></i></button>
+        <button class="nav-btn" data-target="lifestyle-section"><span>习惯</span><i class="fa-solid fa-leaf"></i></button>
+        <button class="nav-btn" data-target="mind-section"><span>心绪</span><i class="fa-regular fa-heart"></i></button>
+        <button class="nav-btn" data-target="phone-section"><span>手机</span><i class="fa-solid fa-shield-heart"></i></button>
+        <button class="nav-btn" data-target="submission-section"><span>投稿</span><i class="fa-regular fa-paper-plane"></i></button>
+        <button class="nav-btn" data-target="settings-section"><span>设置</span><i class="fa-solid fa-database"></i></button>
+        <button class="nav-btn" data-target="analytics-section"><span>看板</span><i class="fa-solid fa-chart-line"></i></button>
+      </nav>
+    </header>
 
-          <nav class="space-y-2">
-            <button class="nav-btn active w-full text-left px-4 py-3 rounded-2xl font-bold flex items-center justify-between" data-target="dashboard-section"><span>总览首页</span><i class="fa-solid fa-house"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="attendance-section"><span>起居与考勤</span><i class="fa-regular fa-clock"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="calendar-section"><span>时间块日历</span><i class="fa-regular fa-calendar"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="focus-section"><span>专注与任务</span><i class="fa-solid fa-bullseye"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="lifestyle-section"><span>习惯与饮食</span><i class="fa-solid fa-leaf"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="mind-section"><span>情绪与观心</span><i class="fa-regular fa-heart"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="phone-section"><span>手机克制与成就</span><i class="fa-solid fa-shield-heart"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="submission-section"><span>投稿管理</span><i class="fa-regular fa-paper-plane"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="settings-section"><span>设置 / 数据管理</span><i class="fa-solid fa-database"></i></button>
-            <button class="nav-btn w-full text-left px-4 py-3 rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-between" data-target="analytics-section"><span>数据看板</span><i class="fa-solid fa-chart-line"></i></button>
-          </nav>
+    <div class="hidden" aria-hidden="true">
+      <span id="currentDateTime"></span>
+      <span id="sbFocus">0 分钟</span>
+      <span id="sbTask">无</span>
+      <span id="sbPhone">0 次</span>
+      <span id="sbHabit">0%</span>
+      <span id="sbSubmissions">0</span>
+    </div>
 
-          <div class="mt-6 border-t border-gray-100 pt-5">
-            <h3 class="text-xs tracking-[0.2em] uppercase text-calm-mute font-black mb-3">今日快照</h3>
-            <div class="space-y-2 text-sm">
-              <div class="flex justify-between"><span class="text-calm-mute">专注时长</span><span id="sbFocus" class="font-bold text-dopamine-orange">0 分钟</span></div>
-              <div class="flex justify-between"><span class="text-calm-mute">进行中任务</span><span id="sbTask" class="font-bold truncate max-w-[120px]">无</span></div>
-              <div class="flex justify-between"><span class="text-calm-mute">手机克制</span><span id="sbPhone" class="font-bold text-dopamine-purple">0 次</span></div>
-              <div class="flex justify-between"><span class="text-calm-mute">习惯完成度</span><span id="sbHabit" class="font-bold text-dopamine-mint">0%</span></div>
-              <div class="flex justify-between"><span class="text-calm-mute">投稿进行中</span><span id="sbSubmissions" class="font-bold text-dopamine-sky">0</span></div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      <main class="lg:col-span-9 xl:col-span-10 space-y-6">
+    <main class="main-content space-y-6">
         <section id="dashboard-section" class="section active">
           <div class="soft-card p-6 md:p-8 overflow-hidden relative">
             <div class="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-dopamine-yellow/20 blur-3xl"></div>
@@ -762,7 +852,7 @@
             <div class="time-week-main">
               <div class="time-week-toolbar">
                 <div>
-                  <div class="time-week-kicker">Time Tracker Calendar</div>
+                  <div class="time-week-kicker">周历</div>
                   <button id="weekPickerBtn" class="time-week-title" type="button">
                     <span id="weekRangeTitle">本周</span>
                     <i class="fa-solid fa-chevron-down"></i>
@@ -1190,7 +1280,6 @@
           </div>
         </section>
       </main>
-    </div>
   </div>
 
 
