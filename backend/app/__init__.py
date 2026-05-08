@@ -1,0 +1,1 @@
+"""Mingxintai backend package."""
