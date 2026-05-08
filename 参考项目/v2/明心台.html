@@ -122,6 +122,14 @@
     .focus-runner-meta { margin-top: .18rem; font-size: .72rem; color: #8A8FA6; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .focus-runner-time { font-variant-numeric: tabular-nums; font-weight: 950; font-size: 1.1rem; color: #FF8C42; white-space: nowrap; }
     .focus-runner-stop { border-radius: .78rem; padding: .38rem .56rem; font-size: .72rem; font-weight: 900; background: rgba(255,255,255,.76); border: 1px solid rgba(236,238,245,.95); color: #FF6B8B; white-space: nowrap; }
+    .rest-dialog { width: min(100vw, 760px); max-width: 100vw; min-height: min(100vh, 760px); border: 0; border-radius: 0; padding: 0; background: transparent; color: #45495F; }
+    .rest-dialog::backdrop { background: rgba(31,36,51,.72); backdrop-filter: blur(10px); }
+    .rest-panel { min-height: min(100vh, 760px); display: grid; place-items: center; padding: 1.2rem; background: radial-gradient(circle at 50% 34%, rgba(255,255,255,.98), rgba(239,247,243,.94) 58%, rgba(226,242,235,.9)); }
+    .rest-ring { --rest-progress: 0deg; --rest-ring-color: #43AA8B; width: min(76vw, 350px); aspect-ratio: 1; border-radius: 999px; display: grid; place-items: center; background: conic-gradient(var(--rest-ring-color) var(--rest-progress), rgba(236,238,245,.95) 0deg); box-shadow: 0 28px 70px -36px rgba(25,30,55,.5); }
+    .rest-ring-inner { width: calc(100% - 24px); height: calc(100% - 24px); border-radius: inherit; display: grid; place-items: center; text-align: center; padding: 1.35rem; background: rgba(255,255,255,.94); border: 1px solid rgba(255,255,255,.88); }
+    .rest-countdown { font-size: clamp(2.2rem, 10vw, 4.6rem); line-height: 1; font-weight: 950; font-variant-numeric: tabular-nums; color: var(--rest-ring-color); }
+    .rest-paused-list { max-height: 8.6rem; overflow: auto; display: grid; gap: .45rem; }
+    .rest-paused-item { border-radius: .9rem; border: 1px solid rgba(236,238,245,.9); background: rgba(255,255,255,.72); padding: .58rem .7rem; font-size: .78rem; font-weight: 800; color: #45495F; }
     .timeline-event { position: absolute; scroll-margin-top: 11rem; border-radius: .86rem; padding: .54rem .62rem; color: white; box-shadow: 0 12px 24px -18px rgba(0,0,0,.42); overflow: hidden; border: 1px solid rgba(255,255,255,.42); backdrop-filter: blur(8px); transition: transform .16s ease, box-shadow .16s ease; }
     .timeline-event-stacked { box-shadow: 0 14px 28px -18px rgba(25,30,55,.5); outline: 1px solid rgba(255,255,255,.28); }
     .timeline-event-live { box-shadow: 0 16px 30px -18px rgba(255,140,66,.56), inset 0 0 0 1px rgba(255,255,255,.24); }
@@ -130,21 +138,24 @@
     .timeline-event:hover { transform: translateY(-1px); box-shadow: 0 18px 30px -20px rgba(0,0,0,.46); z-index: 20 !important; }
     .calendar-block-copy { min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 1px; overflow: hidden; }
     .timeline-event-copy { max-width: var(--timeline-copy-width, 100%); }
+    .timeline-event:hover .timeline-event-copy { max-width: calc(100% - .4rem); }
     .timeline-event-title { line-height: 1.18; white-space: normal; word-break: break-word; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .timeline-event-meta { font-size: .72rem; opacity: .92; margin-top: .15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .calendar-block-compact { padding: .26rem .46rem; border-radius: .7rem; }
+    .calendar-block-compact { padding: .34rem .52rem; border-radius: .72rem; }
     .calendar-block-compact .timeline-event-title,
-    .calendar-block-compact .week-block-title { display: block; white-space: nowrap; text-overflow: ellipsis; word-break: normal; font-size: .68rem; line-height: 1; }
+    .calendar-block-compact .week-block-title { display: block; white-space: nowrap; text-overflow: ellipsis; word-break: normal; font-size: .72rem; line-height: 1.12; }
     .calendar-block-compact .timeline-event-meta,
-    .calendar-block-compact .week-block-meta { margin-top: 0; font-size: .58rem; line-height: 1; opacity: .94; }
-    .calendar-block-micro { padding: .14rem .36rem; border-radius: .58rem; }
+    .calendar-block-compact .week-block-meta { margin-top: .08rem; font-size: .62rem; line-height: 1.12; opacity: .94; }
+    .calendar-block-micro { padding: .3rem .48rem; border-radius: .64rem; }
     .calendar-block-micro .timeline-event-title,
-    .calendar-block-micro .week-block-title { font-size: .62rem; line-height: .95; }
+    .calendar-block-micro .week-block-title { font-size: .68rem; line-height: 1.1; }
     .calendar-block-micro .timeline-event-meta,
-    .calendar-block-micro .week-block-meta { font-size: .53rem; line-height: .95; }
+    .calendar-block-micro .week-block-meta { margin-top: .06rem; font-size: .58rem; line-height: 1.08; }
     .calendar-block-compact .timeline-event-stack-label,
     .calendar-block-micro .timeline-event-stack-label { display: none; }
     .schedule-mode-btn.active { background: linear-gradient(90deg, #4D9DE0, #43AA8B); color: white; box-shadow: 0 10px 22px -14px rgba(77,157,224,.65); }
+    .timeline-scale-btn { border-radius: .9rem; padding: .46rem .68rem; font-size: .72rem; font-weight: 900; color: #8A8FA6; background: transparent; transition: all .16s ease; white-space: nowrap; }
+    .timeline-scale-btn.active { color: white; background: linear-gradient(90deg, #4D9DE0, #43AA8B); box-shadow: 0 10px 22px -16px rgba(77,157,224,.72); }
     .week-timeline-shell { border-radius: 1rem; overflow: hidden; border: 1px solid rgba(236,238,245,.9); background: rgba(255,255,255,.72); }
     .week-timeline-scroll { overflow-x: auto; background: linear-gradient(180deg, rgba(255,255,255,.75), rgba(248,251,255,.94)); }
     .week-timeline-head,
@@ -171,7 +182,8 @@
       min-height: 1080px;
       border-right: 1px solid #ECEEF5;
       background-image: linear-gradient(to bottom, rgba(138,143,166,.16) 1px, transparent 1px);
-      background-size: 100% 60px;
+      background-size: 100% var(--week-hour-height, 60px);
+      background-position-y: var(--week-edge-pad, 0px);
     }
     .week-day-col.selected { background-color: rgba(77,157,224,.045); }
     .week-now-line { position:absolute; left:0; right:0; height:2px; background:#FF6B8B; z-index:7; box-shadow:0 0 0 3px rgba(255,107,139,.13); }
@@ -186,13 +198,16 @@
       box-shadow: 0 12px 24px -19px rgba(25,30,55,.55);
       cursor: pointer;
       backdrop-filter: blur(8px);
+      transition: transform .16s ease, box-shadow .16s ease;
     }
+    .week-block:hover { transform: translateY(-1px); box-shadow: 0 18px 30px -20px rgba(25,30,55,.58); z-index: 30 !important; }
     .week-block.live { outline: 1px dashed rgba(255,255,255,.58); }
     .week-block-title { font-size: .74rem; line-height: 1.12; font-weight: 950; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .week-block-meta { margin-top: .12rem; font-size: .62rem; line-height: 1.1; opacity: .9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .week-block-copy { max-width: var(--week-copy-width, 100%); }
-    .week-block.calendar-block-compact { padding: .26rem .46rem; border-radius: .7rem; }
-    .week-block.calendar-block-micro { padding: .14rem .36rem; border-radius: .58rem; }
+    .week-block:hover .week-block-copy { max-width: calc(100% - .25rem); }
+    .week-block.calendar-block-compact { padding: .34rem .52rem; border-radius: .72rem; }
+    .week-block.calendar-block-micro { padding: .3rem .48rem; border-radius: .64rem; }
     @media (max-width: 980px) {
       #sidebar { grid-template-columns: 1fr; position: static; }
       #sidebar > .small-stat:last-child { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -403,9 +418,10 @@
                   <input id="focusNote" class="px-4 py-3 rounded-2xl border border-calm-line bg-white" placeholder="备注（可选）">
                 </div>
               </div>
-              <div class="grid grid-cols-3 gap-2">
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <button id="btnFocusStart" class="px-4 py-3 rounded-2xl bg-dopamine-orange text-white font-black">开始专注</button>
                 <button id="btnFocusStop" class="px-4 py-3 rounded-2xl bg-dopamine-mint text-white font-black">结束专注</button>
+                <button id="btnRestStart" class="px-4 py-3 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-100 font-black">一键休息</button>
                 <button id="btnFocusDiscard" class="px-4 py-3 rounded-2xl bg-rose-100 text-rose-600 font-black">放弃本次</button>
               </div>
               <div class="border-t border-calm-line mt-4 pt-4">
@@ -438,6 +454,10 @@
               <div class="flex flex-wrap gap-2 items-center">
                 <input id="scheduleDate" type="date" class="px-3 py-2 rounded-2xl border border-calm-line bg-white">
                 <button id="btnScheduleToday" class="px-3 py-2 rounded-2xl bg-white border border-calm-line font-semibold">回到今天</button>
+                <div class="inline-flex items-center rounded-2xl bg-white border border-calm-line p-1" aria-label="日程时间轴精度">
+                  <button class="timeline-scale-btn" data-day-timeline-scale="standard">标准</button>
+                  <button class="timeline-scale-btn" data-day-timeline-scale="fine">精细</button>
+                </div>
               </div>
             </div>
             <div class="grid grid-cols-1 gap-4 mb-4">
@@ -480,6 +500,11 @@
               <button id="btnWeekPrev" class="px-3 py-2 rounded-2xl bg-white border border-calm-line font-semibold"><i class="fa-solid fa-chevron-left"></i></button>
               <button id="btnWeekToday" class="px-3 py-2 rounded-2xl bg-white border border-calm-line font-semibold">本周</button>
               <button id="btnWeekNext" class="px-3 py-2 rounded-2xl bg-white border border-calm-line font-semibold"><i class="fa-solid fa-chevron-right"></i></button>
+              <div class="inline-flex items-center rounded-2xl bg-white border border-calm-line p-1" aria-label="周历时间轴精度">
+                <button class="timeline-scale-btn" data-week-timeline-scale="compact">紧凑</button>
+                <button class="timeline-scale-btn" data-week-timeline-scale="standard">标准</button>
+                <button class="timeline-scale-btn" data-week-timeline-scale="fine">精细</button>
+              </div>
               <button id="btnWeekGoSchedule" class="px-3 py-2 rounded-2xl bg-dopamine-sky text-white font-semibold">看当天日轴</button>
             </div>
           </div>
@@ -1088,6 +1113,39 @@
     </div>
   </dialog>
 
+  <dialog id="restDialog" class="rest-dialog">
+    <div class="rest-panel">
+      <div class="w-full max-w-[520px]">
+        <div class="flex items-center justify-between gap-3 mb-5">
+          <div>
+            <div class="text-sm font-black text-emerald-700">一键休息</div>
+            <div id="restExpectedText" class="text-calm-mute text-sm mt-1">预计休息 -- 分钟</div>
+          </div>
+          <div id="restStatusPill" class="pill bg-emerald-50 text-emerald-700">休息中</div>
+        </div>
+        <div class="rest-ring mx-auto" id="restRing">
+          <div class="rest-ring-inner">
+            <div>
+              <div id="restCountdownLabel" class="text-sm font-black text-calm-mute mb-3">还剩</div>
+              <div id="restCountdown" class="rest-countdown mono">00:00</div>
+              <div id="restElapsedText" class="text-sm text-calm-mute mt-3">已休息 00:00</div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6 rounded-2xl border border-white/70 bg-white/60 p-4">
+          <div class="flex items-center justify-between gap-3 mb-3">
+            <div class="font-black">已暂停的专注</div>
+            <div id="restPausedCount" class="text-xs font-bold text-calm-mute">0 项</div>
+          </div>
+          <div id="restPausedList" class="rest-paused-list scroll-thin"></div>
+        </div>
+        <button id="btnRestEnd" class="mt-5 w-full px-5 py-4 rounded-2xl bg-dopamine-orange text-white font-black shadow-soft">
+          结束休息
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <script>
     const STORAGE_KEY = 'mingxin_workspace_merged_v1';
     const LEGACY_STORAGE_KEYS = ['phd_master_workspace_merged_v1'];
@@ -1095,6 +1153,8 @@
     const BACKEND_API_BASE_KEY = 'mingxin_backend_api_base_v1';
     const BACKEND_TOKEN_KEY = 'mingxin_backend_api_token_v1';
     const BACKEND_AUTO_SYNC_KEY = 'mingxin_backend_auto_sync_v1';
+    const PREF_DAY_TIMELINE_SCALE_KEY = `${STORAGE_KEY}__day_timeline_scale`;
+    const PREF_WEEK_TIMELINE_SCALE_KEY = `${STORAGE_KEY}__week_timeline_scale`;
     const SUBMISSION_COLUMNS = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','已见刊/已收录','搁置/拒稿'];
     const STAGE_COLORS = {
       '选题中':'#9B5DE5','写作中':'#FF8C42','待投稿':'#4D9DE0','已投稿':'#43AA8B','审稿中':'#3b82f6','返修中':'#f97316','已接收':'#10b981','已见刊/已收录':'#059669','搁置/拒稿':'#9ca3af'
@@ -1171,6 +1231,9 @@
     const PREF_STATS_MODE_KEY = `${STORAGE_KEY}__stats_mode`;
     let currentSection = 'home-section';
     let focusInterval = null;
+    let restInterval = null;
+    let dayTimelineScale = 'standard';
+    let weekTimelineScale = 'standard';
     let selectedCareMood = 'steady';
     let editContext = null;
     let sidebarHidden = false;
@@ -1220,6 +1283,11 @@
       const safe = Math.max(0, Math.floor(Number(seconds) || 0));
       const h = Math.floor(safe / 3600), m = Math.floor((safe % 3600) / 60), s = safe % 60;
       return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+    function formatShortSeconds(seconds=0) {
+      const safe = Math.max(0, Math.floor(Number(seconds) || 0));
+      const h = Math.floor(safe / 3600), m = Math.floor((safe % 3600) / 60), s = safe % 60;
+      return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
     }
     function addMinutesToHM(start, mins) {
       const base = hmToMinutes(start);
@@ -1290,15 +1358,46 @@
         parentTitle: String(item.parentTitle || '')
       };
     }
+    function normalizePausedFocusItem(item) {
+      if (!item || typeof item !== 'object') return null;
+      return {
+        id: String(item.id || uid('focus')),
+        source: ['task','subtask','manual'].includes(item.source) ? item.source : 'manual',
+        title: String(item.title || '未命名专注'),
+        category: String(item.category || 'research'),
+        note: String(item.note || ''),
+        taskId: item.taskId || '',
+        subtaskId: item.subtaskId || '',
+        parentTitle: String(item.parentTitle || '')
+      };
+    }
+    function normalizeRestActive(rest) {
+      if (!rest || typeof rest !== 'object') return null;
+      const startedAtTs = Number(rest.startedAtTs) || Date.now();
+      const expectedMinutes = Math.max(1, Math.round(Number(rest.expectedMinutes) || 15));
+      const pausedItems = Array.isArray(rest.pausedItems)
+        ? rest.pausedItems.map(normalizePausedFocusItem).filter(Boolean)
+        : [];
+      return {
+        id: String(rest.id || uid('rest')),
+        date: String(rest.date || todayStr()),
+        start: parseHM(rest.start) || nowTime(),
+        startedAtTs,
+        expectedMinutes,
+        pausedItems
+      };
+    }
     function normalizeFocusState(focus={}) {
       const source = focus && typeof focus === 'object' ? focus : {};
       const activeItems = Array.isArray(source.activeItems)
         ? source.activeItems.map(normalizeActiveFocusItem).filter(Boolean)
         : [];
+      const restSource = source.rest && typeof source.rest === 'object' ? source.rest : {};
       return {
         active: normalizeActiveFocusItem(source.active),
         activeItems,
-        sessions: Array.isArray(source.sessions) ? source.sessions : []
+        sessions: Array.isArray(source.sessions) ? source.sessions : [],
+        rest: { active: normalizeRestActive(restSource.active) }
       };
     }
     function recentDates(count=7, endDate=todayStr()) {
@@ -1358,6 +1457,64 @@
       syncDashboardRangeToStatsMode();
       if (rerender) renderAll();
     }
+    function timelineScaleConfig(scope='day') {
+      if (scope === 'week') {
+        const configs = {
+          compact: { label:'紧凑', hourHeight:84, minHeight:40 },
+          standard: { label:'标准', hourHeight:108, minHeight:44 },
+          fine: { label:'精细', hourHeight:132, minHeight:48 }
+        };
+        return configs[weekTimelineScale] || configs.standard;
+      }
+      const configs = {
+        standard: { label:'标准', hourHeight:96, minHeight:42 },
+        fine: { label:'精细', hourHeight:120, minHeight:46 }
+      };
+      return configs[dayTimelineScale] || configs.standard;
+    }
+    function shortBlockFloorHeight(durationMinutes=0, scope='day') {
+      const mins = Math.max(0, Number(durationMinutes) || 0);
+      const base = timelineScaleConfig(scope).minHeight;
+      if (mins <= 0) return base;
+      if (mins <= 3) return base;
+      if (mins <= 10) return base + (scope === 'week' ? 10 : 8);
+      if (mins <= 20) return base + (scope === 'week' ? 20 : 18);
+      if (mins <= 30) return base + (scope === 'week' ? 30 : 26);
+      return base + (scope === 'week' ? 34 : 30);
+    }
+    function visualBlockHeight(durationMinutes=0, hourHeight=72, scope='day') {
+      const duration = Math.max(1 / 60, Number(durationMinutes) || 0);
+      const trueHeight = duration / 60 * hourHeight;
+      return Math.max(trueHeight, shortBlockFloorHeight(duration, scope));
+    }
+    function visualBlockMinutesForLane(block, hourHeight=72, scope='day') {
+      const start = Number.isFinite(block?.startMinute) ? block.startMinute : hmToMinutes(block?.start);
+      const end = Number.isFinite(block?.endMinute) ? block.endMinute : start + minutesBetween(block?.start, block?.end);
+      const duration = Math.max(1 / 60, end - start);
+      return visualBlockHeight(duration, hourHeight, scope) / hourHeight * 60;
+    }
+    function syncTimelineScaleButtons() {
+      document.querySelectorAll('[data-day-timeline-scale]').forEach(btn => {
+        const active = btn.dataset.dayTimelineScale === dayTimelineScale;
+        btn.classList.toggle('active', active);
+      });
+      document.querySelectorAll('[data-week-timeline-scale]').forEach(btn => {
+        const active = btn.dataset.weekTimelineScale === weekTimelineScale;
+        btn.classList.toggle('active', active);
+      });
+    }
+    function setDayTimelineScale(scale='standard') {
+      dayTimelineScale = ['standard','fine'].includes(scale) ? scale : 'standard';
+      localStorage.setItem(PREF_DAY_TIMELINE_SCALE_KEY, dayTimelineScale);
+      syncTimelineScaleButtons();
+      renderTimeline();
+    }
+    function setWeekTimelineScale(scale='standard') {
+      weekTimelineScale = ['compact','standard','fine'].includes(scale) ? scale : 'standard';
+      localStorage.setItem(PREF_WEEK_TIMELINE_SCALE_KEY, weekTimelineScale);
+      syncTimelineScaleButtons();
+      renderWeekTimeline();
+    }
 
     function applySidebarHidden(hidden) {
       const layout = $('appLayout');
@@ -1378,9 +1535,14 @@
     function loadPrefs() {
       const storedMode = localStorage.getItem(PREF_STATS_MODE_KEY);
       statsMode = ['day','week','month'].includes(storedMode) ? storedMode : 'day';
+      const storedDayScale = localStorage.getItem(PREF_DAY_TIMELINE_SCALE_KEY);
+      const storedWeekScale = localStorage.getItem(PREF_WEEK_TIMELINE_SCALE_KEY);
+      dayTimelineScale = ['standard','fine'].includes(storedDayScale) ? storedDayScale : 'standard';
+      weekTimelineScale = ['compact','standard','fine'].includes(storedWeekScale) ? storedWeekScale : 'standard';
       sidebarHidden = localStorage.getItem(PREF_SIDEBAR_HIDDEN_KEY) === '1';
       applySidebarHidden(sidebarHidden);
       syncStatsModeButtons();
+      syncTimelineScaleButtons();
       syncDashboardRangeToStatsMode();
     }
 
@@ -2044,6 +2206,20 @@
     }
     function hasRunningFocus() {
       return runningFocusEntries().length > 0;
+    }
+    function activeRest() {
+      if (!state.focus.rest || typeof state.focus.rest !== 'object') state.focus.rest = { active:null };
+      state.focus.rest.active = normalizeRestActive(state.focus.rest.active);
+      return state.focus.rest.active;
+    }
+    function hasActiveRest() {
+      return !!activeRest();
+    }
+    function restElapsedSeconds(rest=activeRest()) {
+      return rest ? Math.max(0, Math.floor((Date.now() - (Number(rest.startedAtTs) || Date.now())) / 1000)) : 0;
+    }
+    function restIsOvertime(rest=activeRest()) {
+      return !!rest && restElapsedSeconds(rest) > Math.max(1, Number(rest.expectedMinutes) || 1) * 60;
     }
     function taskOpen(task) { return task && task.status !== 'done' && task.gtdBucket !== 'done'; }
     function openTasksList() { return state.tasks.filter(taskOpen); }
@@ -2812,11 +2988,79 @@
       renderFocusTimer();
     }
     function stopFocusTicker() { if (focusInterval) { clearInterval(focusInterval); focusInterval = null; } }
+    function startRestTicker() {
+      stopRestTicker();
+      restInterval = setInterval(renderRestTimer, 1000);
+      renderRestTimer();
+    }
+    function stopRestTicker() { if (restInterval) { clearInterval(restInterval); restInterval = null; } }
+    function openRestDialog() {
+      const dialog = $('restDialog');
+      if (dialog && !dialog.open) dialog.showModal();
+      renderRestTimer();
+    }
+    function closeRestDialog() {
+      const dialog = $('restDialog');
+      if (dialog?.open) dialog.close();
+    }
+    function renderRestTimer() {
+      const rest = activeRest();
+      if (!rest) {
+        closeRestDialog();
+        stopRestTicker();
+        return;
+      }
+      const elapsed = restElapsedSeconds(rest);
+      const expectedSeconds = Math.max(1, Number(rest.expectedMinutes) || 1) * 60;
+      const remaining = expectedSeconds - elapsed;
+      const overtime = remaining < 0;
+      const color = overtime ? '#EF4444' : '#43AA8B';
+      const progress = overtime ? 360 : Math.min(360, Math.max(0, elapsed / expectedSeconds * 360));
+      if ($('restRing')) {
+        $('restRing').style.setProperty('--rest-progress', `${progress}deg`);
+        $('restRing').style.setProperty('--rest-ring-color', color);
+      }
+      if ($('restExpectedText')) $('restExpectedText').textContent = `预计休息 ${rest.expectedMinutes} 分钟 · ${rest.start} 开始`;
+      if ($('restStatusPill')) {
+        $('restStatusPill').textContent = overtime ? '已超时' : '休息中';
+        $('restStatusPill').className = overtime ? 'pill bg-rose-100 text-rose-700' : 'pill bg-emerald-50 text-emerald-700';
+      }
+      if ($('restCountdownLabel')) $('restCountdownLabel').textContent = overtime ? '已超时' : '还剩';
+      if ($('restCountdown')) $('restCountdown').textContent = formatShortSeconds(overtime ? Math.abs(remaining) : remaining);
+      if ($('restElapsedText')) $('restElapsedText').textContent = `已休息 ${formatShortSeconds(elapsed)}`;
+      const pausedItems = Array.isArray(rest.pausedItems) ? rest.pausedItems : [];
+      if ($('restPausedCount')) $('restPausedCount').textContent = `${pausedItems.length} 项`;
+      if ($('restPausedList')) {
+        $('restPausedList').innerHTML = pausedItems.length
+          ? pausedItems.map(item => {
+            const source = item.source === 'subtask' ? `子任务 · ${item.parentTitle || '父任务'}` : item.source === 'task' ? '任务专注' : '手动专注';
+            return `<div class="rest-paused-item"><div>${escapeHtml(item.title)}</div><div class="text-xs text-calm-mute mt-1">${escapeHtml(source)}</div></div>`;
+          }).join('')
+          : '<div class="text-sm text-calm-mute">当前没有暂停的专注，休息会单独记录到日程。</div>';
+      }
+      if ($('timelineContainer') && rest.date === ($('scheduleDate')?.value || todayStr())) renderTimeline();
+      if ($('weekTimelineContainer')) renderWeekTimeline();
+    }
     function renderFocusTimer() {
       const running = runningFocusEntries();
       const active = running[0] || null;
       const listEl = $('focusActiveTimers');
       if (!active) {
+        const rest = activeRest();
+        if (rest) {
+          $('focusClock').textContent = formatElapsedSeconds(restElapsedSeconds(rest));
+          $('focusStatusPill').textContent = restIsOvertime(rest) ? '休息超时' : '休息中';
+          if (listEl) listEl.innerHTML = `<div class="focus-runner-card" style="border-color:${restIsOvertime(rest) ? 'rgba(239,68,68,.34)' : 'rgba(67,170,139,.34)'};background:rgba(255,255,255,.82);">
+            <div class="min-w-0">
+              <div class="focus-runner-title">休息中</div>
+              <div class="focus-runner-meta">${escapeHtml(rest.start)} 开始 · 预计 ${rest.expectedMinutes} 分钟</div>
+            </div>
+            <div class="focus-runner-time mono" style="color:${restIsOvertime(rest) ? '#EF4444' : '#43AA8B'}">${formatShortSeconds(restElapsedSeconds(rest))}</div>
+            <button class="focus-runner-stop" data-rest-end="true">结束</button>
+          </div>`;
+          listEl?.querySelector('[data-rest-end]')?.addEventListener('click', endRest);
+          return;
+        }
         $('focusClock').textContent = '00:00:00';
         $('focusStatusPill').textContent = '未开始';
         if (listEl) listEl.innerHTML = '';
@@ -2898,6 +3142,173 @@
       promoteNextActiveTaskFocus();
       saveState(); renderAll();
       if (hasRunningFocus()) startFocusTicker(); else stopFocusTicker();
+    }
+    function snapshotFocusForRest(item) {
+      return normalizePausedFocusItem({
+        id: item.id || '',
+        source: item.source || 'manual',
+        title: item.title || '未命名专注',
+        category: item.category || 'research',
+        note: item.note || '',
+        taskId: item.taskId || '',
+        subtaskId: item.subtaskId || '',
+        parentTitle: item.parentTitle || ''
+      });
+    }
+    function finishManualFocusForRest(active) {
+      if (!active) return false;
+      const end = nowTime();
+      const mins = Math.max(1, Math.round((Date.now() - (Number(active.startedAtTs) || Date.now())) / 60000));
+      recordFocusRun({
+        id: active.id,
+        date: active.date,
+        title: active.title,
+        category: active.category,
+        note: active.note,
+        start: active.start,
+        end,
+        minutes: mins,
+        taskId: ''
+      });
+      state.focus.activeItems = (Array.isArray(state.focus.activeItems) ? state.focus.activeItems : []).filter(item => item.id !== active.id);
+      if (state.focus.active?.id === active.id) state.focus.active = null;
+      return true;
+    }
+    function pauseRunningFocusForRest() {
+      const running = runningFocusEntries();
+      const pausedItems = running.map(snapshotFocusForRest).filter(Boolean);
+      running.forEach(item => {
+        if (item.source === 'task' && item.taskId) {
+          const task = state.tasks.find(taskItem => taskItem.id === item.taskId);
+          if (task) {
+            finishActiveFocusRunForTask(task);
+            if (task.status === 'active') task.status = 'todo';
+          }
+          return;
+        }
+        if (item.source === 'subtask' && item.taskId && item.subtaskId) {
+          const task = state.tasks.find(taskItem => taskItem.id === item.taskId);
+          const subtask = subtaskById(task, item.subtaskId);
+          if (task && subtask) finishActiveFocusRunForSubtask(task, subtask);
+          return;
+        }
+        finishManualFocusForRest(item);
+      });
+      state.focus.active = null;
+      promoteNextActiveTaskFocus();
+      return pausedItems;
+    }
+    function startRest() {
+      if (hasActiveRest()) {
+        openRestDialog();
+        startRestTicker();
+        return;
+      }
+      const raw = prompt('预计休息多久？请输入分钟数', '15');
+      if (raw === null) return;
+      const expectedMinutes = Math.max(1, Math.round(Number(raw)));
+      if (!Number.isFinite(expectedMinutes)) {
+        alert('请输入有效的休息分钟数。');
+        return;
+      }
+      const pausedItems = pauseRunningFocusForRest();
+      state.focus.rest.active = {
+        id: uid('rest'),
+        date: todayStr(),
+        start: nowTime(),
+        startedAtTs: Date.now(),
+        expectedMinutes,
+        pausedItems
+      };
+      saveState();
+      renderAll();
+      stopFocusTicker();
+      openRestDialog();
+      startRestTicker();
+    }
+    function recordRestBlock(rest) {
+      if (!rest) return;
+      const cleanDate = rest.date || todayStr();
+      const cleanStart = parseHM(rest.start) || nowTime();
+      const cleanEnd = parseHM(nowTime()) || cleanStart;
+      const elapsedMinutes = Math.max(1, Math.round(restElapsedSeconds(rest) / 60));
+      const displayEnd = minutesBetween(cleanStart, cleanEnd) > 0 ? cleanEnd : addMinutesToHM(cleanStart, elapsedMinutes);
+      const overtime = restIsOvertime(rest);
+      getDayTimeBlocks(cleanDate).push({
+        id: uid('block'),
+        taskId: '',
+        subtaskId: '',
+        parentTitle: '',
+        restId: rest.id,
+        start: cleanStart,
+        end: displayEnd,
+        title: overtime ? '休息（超时）' : '休息',
+        color: overtime ? '#EF4444' : '#43AA8B'
+      });
+    }
+    function restorePausedFocusItems(items=[]) {
+      const startedAt = nowDateTime();
+      const start = nowTime();
+      let restored = 0;
+      items.forEach(item => {
+        if (item.source === 'task' && item.taskId) {
+          const task = state.tasks.find(taskItem => taskItem.id === item.taskId);
+          if (!task || task.status === 'done' || task.status === 'memo') return;
+          task.status = 'active';
+          task.gtdBucket = task.gtdBucket === 'inbox' || task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue' ? 'next' : task.gtdBucket;
+          task.todayBucket = task.todayBucket || 'should';
+          task.doneAt = '';
+          task.startedAt = startedAt;
+          task.activeStartedAtTs = Date.now();
+          task.activeFocusId = uid('focus');
+          restored += 1;
+          return;
+        }
+        if (item.source === 'subtask' && item.taskId && item.subtaskId) {
+          const task = state.tasks.find(taskItem => taskItem.id === item.taskId);
+          const subtask = subtaskById(task, item.subtaskId);
+          if (!task || !subtask || task.status === 'done' || task.status === 'memo' || subtask.done) return;
+          task.todayBucket = task.todayBucket || 'should';
+          if (task.gtdBucket === 'inbox' || task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') task.gtdBucket = 'next';
+          if (task.status === 'overdue' || task.status === 'planned') task.status = 'todo';
+          task.doneAt = '';
+          subtask.startedAt = startedAt;
+          subtask.activeStartedAtTs = Date.now();
+          subtask.activeFocusId = uid('focus');
+          restored += 1;
+          return;
+        }
+        if (!Array.isArray(state.focus.activeItems)) state.focus.activeItems = [];
+        state.focus.activeItems.unshift({
+          id: uid('focus'),
+          title: item.title || '未命名专注',
+          category: item.category || 'research',
+          note: item.note || '',
+          date: todayStr(),
+          start,
+          startedAtTs: Date.now(),
+          taskId: null
+        });
+        restored += 1;
+      });
+      return restored;
+    }
+    function endRest() {
+      const rest = activeRest();
+      if (!rest) return;
+      const pausedItems = Array.isArray(rest.pausedItems) ? rest.pausedItems : [];
+      recordRestBlock(rest);
+      state.focus.rest.active = null;
+      saveState();
+      stopRestTicker();
+      closeRestDialog();
+      let restored = 0;
+      if (pausedItems.length && confirm(`休息已结束。是否恢复刚才暂停的 ${pausedItems.length} 个专注？`)) {
+        restored = restorePausedFocusItems(pausedItems);
+        saveState();
+      }
+      renderAll();
+      if (restored || hasRunningFocus()) startFocusTicker(); else stopFocusTicker();
     }
     function addManualFocus() {
       const date = $('manualFocusDate').value || todayStr();
@@ -2988,7 +3399,10 @@
         .map(block => {
           const startMinute = Number.isFinite(block.startMinute) ? block.startMinute : hmToMinutes(block.start);
           const endMinute = Number.isFinite(block.endMinute) ? block.endMinute : startMinute + minutesBetween(block.start, block.end);
-          const visualEndMinute = Math.max(endMinute, startMinute + Math.max(0, Number(visualMinMinutes) || 0));
+          const minMinutes = typeof visualMinMinutes === 'function'
+            ? Math.max(0, Number(visualMinMinutes(block, startMinute, endMinute)) || 0)
+            : Math.max(0, Number(visualMinMinutes) || 0);
+          const visualEndMinute = Math.max(endMinute, startMinute + minMinutes);
           return { ...block, startMinute, endMinute, visualStartMinute:startMinute, visualEndMinute };
         })
         .sort((a, b) => a.startMinute - b.startMinute || b.endMinute - a.endMinute);
@@ -3019,7 +3433,7 @@
     function runningTimelineBlocks(date) {
       const now = new Date();
       const nowMinute = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
-      return runningFocusEntries()
+      const focusBlocks = runningFocusEntries()
         .map(item => {
           const itemDate = item.date || todayStr();
           const selectedDay = parseYMD(date);
@@ -3048,25 +3462,56 @@
             elapsedSeconds: Math.max(0, Math.floor((Date.now() - (Number(item.startedAtTs) || Date.now())) / 1000))
           };
         }).filter(Boolean);
+      const rest = activeRest();
+      if (!rest) return focusBlocks;
+      const restDate = rest.date || todayStr();
+      const selectedDay = parseYMD(date);
+      const restDay = parseYMD(restDate);
+      const isSameDate = restDate === date;
+      const isTodayContinuation = date === todayStr() && restDay && selectedDay && restDay < selectedDay;
+      if (!isSameDate && !isTodayContinuation) return focusBlocks;
+      const visibleStart = isTodayContinuation ? (nowMinute < 6 * 60 ? '00:00' : '06:00') : (rest.start || nowTime());
+      const startMinute = hmToMinutes(visibleStart);
+      const elapsedMinutes = Math.max(1 / 60, (Date.now() - (Number(rest.startedAtTs) || Date.now())) / 60000);
+      const segmentEndMinute = isTodayContinuation ? Math.max(startMinute + 1 / 60, nowMinute) : Math.max(startMinute + elapsedMinutes, nowMinute);
+      const endMinute = Math.min(24 * 60, segmentEndMinute);
+      focusBlocks.push({
+        id: `running_rest_${rest.id || rest.startedAtTs}`,
+        title: restIsOvertime(rest) ? '休息中（超时）' : '休息中',
+        taskId: '',
+        subtaskId: '',
+        parentTitle: '',
+        start: visibleStart,
+        end: nowTime(),
+        startMinute,
+        endMinute,
+        color: restIsOvertime(rest) ? '#EF4444' : '#43AA8B',
+        virtual: true,
+        rest: true,
+        elapsedSeconds: Math.max(0, Math.floor((Date.now() - (Number(rest.startedAtTs) || Date.now())) / 1000))
+      });
+      return focusBlocks;
     }
     function renderTimeline() {
       const date = $('scheduleDate').value || todayStr();
       const blocks = [...sortByTime(getDayTimeBlocks(date)), ...runningTimelineBlocks(date)];
-      const startMinute = 6 * 60; const endMinute = 24 * 60; const hourHeight = 72;
-      const minReadableBlockHeight = 44;
+      const scale = timelineScaleConfig('day');
+      const startMinute = 6 * 60; const endMinute = 24 * 60; const hourHeight = scale.hourHeight;
       const hourLines = [];
       for (let hour = 6; hour < 24; hour++) {
-        hourLines.push(`<div class="timeline-hour"><div class="timeline-hour-label">${pad(hour)}:00</div></div>`);
+        hourLines.push(`<div class="timeline-hour" style="height:${hourHeight}px"><div class="timeline-hour-label">${pad(hour)}:00</div></div>`);
       }
-      const stackedBlocks = assignTimelineLanes(blocks, minReadableBlockHeight / hourHeight * 60);
-      let layoutBottom = endMinute > startMinute ? ((endMinute - startMinute) / 60) * hourHeight : 1296;
+      const stackedBlocks = assignTimelineLanes(blocks, block => visualBlockMinutesForLane(block, hourHeight, 'day'));
+      const baseHeight = endMinute > startMinute ? ((endMinute - startMinute) / 60) * hourHeight : 1296;
+      let layoutBottom = baseHeight;
       const events = stackedBlocks.map(block => {
         const stackCount = Math.max(1, block.stackCount || 1);
         const stackIndex = Math.max(0, block.stackIndex || 0);
         const blockStartMinute = Number.isFinite(block.startMinute) ? block.startMinute : hmToMinutes(block.start);
         const blockEndMinute = Number.isFinite(block.endMinute) ? block.endMinute : blockStartMinute + minutesBetween(block.start, block.end);
+        const rawDuration = Math.max(1 / 60, blockEndMinute - blockStartMinute);
         let top = ((blockStartMinute - startMinute) / 60) * hourHeight;
-        let height = Math.max(minReadableBlockHeight, (blockEndMinute - blockStartMinute) / 60 * hourHeight);
+        let height = visualBlockHeight(rawDuration, hourHeight, 'day');
         if (top < 0) top = 0;
         layoutBottom = Math.max(layoutBottom, top + height + 34);
         const bg = block.color || '#4D9DE0';
@@ -3086,10 +3531,11 @@
         const width = splitStack
           ? `calc((100% - ${railLeft + railRight + (stackCount - 1) * laneGap}px) / ${stackCount})`
           : stackCount > 1 ? `${layeredWidth}px` : `calc(100% - ${railLeft + railRight}px)`;
+        const hasRoomBelowStack = stackCount > 1 && stackIndex < stackCount - 1 && height >= 92;
         const copyWidth = splitStack ? 9999 : stackCount > 1
-          ? (stackIndex < stackCount - 1 ? Math.max(52, overlapShift - 14) : Math.max(120, layeredWidth - 54))
+          ? (hasRoomBelowStack ? 9999 : (stackIndex < stackCount - 1 ? Math.max(52, overlapShift - 14) : Math.max(120, layeredWidth - 54)))
           : 9999;
-        const durationText = block.virtual ? `进行中 ${formatElapsedSeconds(block.elapsedSeconds)}` : formatMinutes(blockEndMinute - blockStartMinute);
+        const durationText = block.virtual ? `${block.rest ? '休息' : '进行中'} ${formatElapsedSeconds(block.elapsedSeconds)}` : formatMinutes(blockEndMinute - blockStartMinute);
         const parentMeta = block.parentTitle ? `${escapeHtml(block.parentTitle)} · ` : '';
         return `<div class="timeline-event ${densityClass} ${stackCount > 1 && !splitStack ? 'timeline-event-stacked' : ''} ${block.virtual ? 'timeline-event-live' : ''}" style="top:${top}px;height:${height}px;left:${left};width:${width};--timeline-copy-width:${copyWidth}px;background:linear-gradient(135deg, ${colorWithAlpha(bg, alpha)}, ${colorWithAlpha(bg, Math.max(.42, alpha - .18))});border-color:${colorWithAlpha(bg, .9)};z-index:${z};" ${block.virtual ? 'data-live-block="true"' : `data-block-edit="${block.id}"`}>
           ${stackCount > 1 && !splitStack ? `<span class="timeline-event-stack-label">${stackIndex + 1}/${stackCount}</span>` : ''}
@@ -3099,7 +3545,7 @@
           </div>
         </div>`;
       }).join('');
-      $('timelineContainer').style.minHeight = `${Math.max(1296, Math.ceil(layoutBottom))}px`;
+      $('timelineContainer').style.minHeight = `${Math.max(baseHeight, Math.ceil(layoutBottom))}px`;
       $('timelineContainer').innerHTML = `${hourLines.join('')}<div class="absolute inset-0">${events}</div>`;
       $('timelineContainer').querySelectorAll('[data-block-edit]').forEach(el => el.onclick = () => openBlockEditor(el.dataset.blockEdit, date));
     }
@@ -3136,9 +3582,11 @@
       if ($('weekRangeLabel')) $('weekRangeLabel').textContent = formatWeekRange(dates);
       const startMinute = 6 * 60;
       const endMinute = 24 * 60;
-      const hourHeight = 60;
+      const scale = timelineScaleConfig('week');
+      const hourHeight = scale.hourHeight;
       const totalHeight = ((endMinute - startMinute) / 60) * hourHeight;
-      const minReadableBlockHeight = 40;
+      const edgePad = 24;
+      const canvasHeight = totalHeight + edgePad * 2;
       const now = new Date();
       const nowMinute = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
       const heads = dates.map(date => {
@@ -3152,19 +3600,19 @@
       }).join('');
       const axis = Array.from({ length: 19 }, (_, index) => {
         const hour = 6 + index;
-        const top = index * hourHeight;
+        const top = edgePad + index * hourHeight;
         return `<div class="week-hour-label" style="top:${top}px">${pad(hour)}:00</div>`;
       }).join('');
       const cols = dates.map(date => {
-        const stacked = assignTimelineLanes([...sortByTime(getDayTimeBlocks(date)), ...runningTimelineBlocks(date)], minReadableBlockHeight / hourHeight * 60);
+        const stacked = assignTimelineLanes([...sortByTime(getDayTimeBlocks(date)), ...runningTimelineBlocks(date)], block => visualBlockMinutesForLane(block, hourHeight, 'week'));
         const blocks = stacked.map(block => {
           const rawStart = Number.isFinite(block.startMinute) ? block.startMinute : hmToMinutes(block.start);
           const rawEnd = Number.isFinite(block.endMinute) ? block.endMinute : rawStart + minutesBetween(block.start, block.end);
           const blockStart = clamp(rawStart, startMinute, endMinute);
           const blockEnd = clamp(rawEnd, startMinute, endMinute);
           if (blockEnd <= startMinute || blockStart >= endMinute || blockEnd <= blockStart) return '';
-          const top = ((blockStart - startMinute) / 60) * hourHeight;
-          const height = Math.max(minReadableBlockHeight, ((blockEnd - blockStart) / 60) * hourHeight);
+          const top = edgePad + ((blockStart - startMinute) / 60) * hourHeight;
+          const height = visualBlockHeight(Math.max(1 / 60, blockEnd - blockStart), hourHeight, 'week');
           const stackCount = Math.max(1, block.stackCount || 1);
           const stackIndex = Math.max(0, block.stackIndex || 0);
           const compact = height < 42 || stackCount >= 3;
@@ -3183,8 +3631,9 @@
           const bg = block.color || '#4D9DE0';
           const alpha = Math.max(.38, .84 - stackIndex * .1);
           const z = 10 + stackIndex;
-          const copyWidth = splitStack ? 9999 : stackCount > 1 && stackIndex < stackCount - 1 ? Math.max(30, shift - 10) : 9999;
-          const durationText = block.virtual ? `进行中 ${formatElapsedSeconds(block.elapsedSeconds)}` : formatMinutes(rawEnd - rawStart);
+          const hasRoomBelowStack = stackCount > 1 && stackIndex < stackCount - 1 && height >= 72;
+          const copyWidth = splitStack ? 9999 : stackCount > 1 && stackIndex < stackCount - 1 && !hasRoomBelowStack ? Math.max(30, shift - 10) : 9999;
+          const durationText = block.virtual ? `${block.rest ? '休息' : '进行中'} ${formatElapsedSeconds(block.elapsedSeconds)}` : formatMinutes(rawEnd - rawStart);
           const densityClass = height < 36 ? 'calendar-block-micro' : compact ? 'calendar-block-compact' : '';
           const parentMeta = block.parentTitle ? `${escapeHtml(block.parentTitle)} · ` : '';
           return `<div class="week-block ${densityClass} ${block.virtual ? 'live' : ''}" style="top:${top}px;height:${height}px;left:${left};width:${width};background:linear-gradient(135deg, ${colorWithAlpha(bg, alpha)}, ${colorWithAlpha(bg, Math.max(.42, alpha - .18))});z-index:${z};--week-copy-width:${copyWidth}px;" ${block.virtual ? 'data-week-live="true"' : `data-week-block-edit="${block.id}" data-week-block-date="${date}"`}>
@@ -3195,16 +3644,16 @@
           </div>`;
         }).join('');
         const nowLine = date === todayStr() && nowMinute >= startMinute && nowMinute <= endMinute
-          ? `<div class="week-now-line" style="top:${((nowMinute - startMinute) / 60) * hourHeight}px"></div>`
+          ? `<div class="week-now-line" style="top:${edgePad + ((nowMinute - startMinute) / 60) * hourHeight}px"></div>`
           : '';
         const cls = [date === selectedDate ? 'selected' : ''].filter(Boolean).join(' ');
-        return `<div class="week-day-col ${cls}" data-week-date="${date}" style="min-height:${totalHeight}px">${nowLine}${blocks}</div>`;
+        return `<div class="week-day-col ${cls}" data-week-date="${date}" style="min-height:${canvasHeight}px;--week-hour-height:${hourHeight}px;--week-edge-pad:${edgePad}px">${nowLine}${blocks}</div>`;
       }).join('');
       container.innerHTML = `<div class="week-timeline-shell">
         <div class="week-timeline-scroll scroll-thin">
           <div class="week-timeline-head"><div class="week-time-spacer"></div>${heads}</div>
-          <div class="week-timeline-body" style="min-height:${totalHeight}px">
-            <div class="week-time-axis" style="min-height:${totalHeight}px">${axis}</div>
+          <div class="week-timeline-body" style="min-height:${canvasHeight}px">
+            <div class="week-time-axis" style="min-height:${canvasHeight}px">${axis}</div>
             ${cols}
           </div>
         </div>
@@ -5173,6 +5622,7 @@
       if (refreshOverdueTasks()) saveState();
       updateClock();
       syncStatsModeButtons();
+      syncTimelineScaleButtons();
       renderSidebarSnapshot();
       renderHomeQuickLinks();
       renderHomeThemeStats();
@@ -5194,11 +5644,14 @@
       renderSettingsRangeStats();
       if (currentSection === 'dashboard-section') renderDashboard();
       if (currentSection === 'settings-section') refreshSettings();
+      if (hasActiveRest()) renderRestTimer();
     }
 
     function bindEvents() {
       document.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => navTo(btn.dataset.target));
       document.querySelectorAll('.stats-mode-btn').forEach(btn => btn.onclick = () => setStatsMode(btn.dataset.statsMode));
+      document.querySelectorAll('[data-day-timeline-scale]').forEach(btn => btn.onclick = () => setDayTimelineScale(btn.dataset.dayTimelineScale));
+      document.querySelectorAll('[data-week-timeline-scale]').forEach(btn => btn.onclick = () => setWeekTimelineScale(btn.dataset.weekTimelineScale));
       if ($('btnSidebarToggle')) $('btnSidebarToggle').onclick = toggleSidebar;
 
       $('btnCheckinToggle').onclick = toggleWorkLog;
@@ -5230,7 +5683,10 @@
       $('taskInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
       $('btnFocusStart').onclick = startFocus;
       $('btnFocusStop').onclick = stopFocus;
+      $('btnRestStart').onclick = startRest;
       $('btnFocusDiscard').onclick = discardFocus;
+      $('btnRestEnd').onclick = endRest;
+      $('restDialog').addEventListener('cancel', event => event.preventDefault());
       $('manualFocusDate').value = todayStr();
       $('btnAddManualFocus').onclick = addManualFocus;
       $('scheduleDate').value = todayStr();
@@ -5336,6 +5792,11 @@
     renderAll();
     updateClock();
     setInterval(updateClock, 1000);
+    if (hasRunningFocus()) startFocusTicker();
+    if (hasActiveRest()) {
+      openRestDialog();
+      startRestTicker();
+    }
   </script>
 </body>
 </html>
