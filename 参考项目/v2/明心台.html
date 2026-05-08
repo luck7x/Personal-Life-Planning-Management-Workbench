@@ -993,12 +993,29 @@
               <div class="small-stat p-4 space-y-3">
                 <div>
                   <div class="font-black">后端同步</div>
-                  <div class="text-xs text-calm-mute mt-1">本地仍保留浏览器数据，手动同步到 WSL2 FastAPI。</div>
+                  <div class="text-xs text-calm-mute mt-1">本地仍保留浏览器数据，开启后会自动同步到 FastAPI，手动按钮只作兜底。</div>
                 </div>
-                <div class="rounded-2xl bg-white border border-calm-line px-3 py-2 text-xs">
-                  <div class="text-calm-mute">API 地址</div>
-                  <code id="backendApiBaseText" class="break-all">http://127.0.0.1:8000</code>
+                <div class="space-y-2">
+                  <label class="block text-xs font-bold text-calm-mute" for="backendApiBaseInput">API 地址</label>
+                  <div class="flex gap-2">
+                    <input id="backendApiBaseInput" type="url" autocomplete="off" class="min-w-0 flex-1 px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
+                    <button id="btnBackendSaveApiBase" class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-calm-line text-sm font-black">保存</button>
+                  </div>
                 </div>
+                <div class="space-y-2">
+                  <label class="block text-xs font-bold text-calm-mute" for="backendTokenInput">访问密钥</label>
+                  <div class="flex gap-2">
+                    <input id="backendTokenInput" type="password" autocomplete="off" placeholder="部署 VPS 后填写" class="min-w-0 flex-1 px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
+                    <button id="btnBackendSaveToken" class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-calm-line text-sm font-black">保存</button>
+                  </div>
+                </div>
+                <label class="flex items-start gap-3 rounded-2xl bg-white border border-calm-line px-3 py-2 cursor-pointer">
+                  <input id="backendAutoSyncToggle" type="checkbox" class="mt-1 accent-[#9B5DE5]">
+                  <span class="min-w-0">
+                    <span class="block text-sm font-black">自动同步</span>
+                    <span id="backendAutoSyncMeta" class="block text-xs text-calm-mute leading-5">关闭后只保留手动上传。</span>
+                  </span>
+                </label>
                 <div id="backendSyncStatus" class="rounded-2xl bg-gray-100 text-calm-mute px-3 py-2 text-xs font-semibold">尚未检查后端。</div>
                 <div class="grid grid-cols-1 gap-2">
                   <button id="btnBackendHealth" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-semibold">检查后端</button>
@@ -1075,6 +1092,9 @@
     const STORAGE_KEY = 'mingxin_workspace_merged_v1';
     const LEGACY_STORAGE_KEYS = ['phd_master_workspace_merged_v1'];
     const BACKEND_API_BASE = 'http://127.0.0.1:8000';
+    const BACKEND_API_BASE_KEY = 'mingxin_backend_api_base_v1';
+    const BACKEND_TOKEN_KEY = 'mingxin_backend_api_token_v1';
+    const BACKEND_AUTO_SYNC_KEY = 'mingxin_backend_auto_sync_v1';
     const SUBMISSION_COLUMNS = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','已见刊/已收录','搁置/拒稿'];
     const STAGE_COLORS = {
       '选题中':'#9B5DE5','写作中':'#FF8C42','待投稿':'#4D9DE0','已投稿':'#43AA8B','审稿中':'#3b82f6','返修中':'#f97316','已接收':'#10b981','已见刊/已收录':'#059669','搁置/拒稿':'#9ca3af'
@@ -1900,8 +1920,14 @@
 
     const state = loadState();
     let workflowSelectedProjectId = '';
+    let backendAutoSyncTimer = null;
+    let backendAutoSyncInFlight = false;
+    let backendAutoSyncQueued = false;
 
-    function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    function saveState(options = {}) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (!options.skipAutoSync) scheduleAutoBackendSync();
+    }
     function getDayAttendance(date=todayStr()) {
       if (!state.attendance[date]) state.attendance[date] = { wake:null, sleep:null, logs:[], leaves:[] };
       return state.attendance[date];
@@ -4642,11 +4668,11 @@
         submissions: normalizeSubmissions(parsed.submissions),
       };
     }
-    function applyWorkspacePayload(parsed = {}) {
+    function applyWorkspacePayload(parsed = {}, options = {}) {
       const next = normalizeWorkspacePayload(parsed);
       Object.keys(state).forEach(key => delete state[key]);
       Object.assign(state, next);
-      saveState();
+      saveState({ skipAutoSync: !!options.skipAutoSync });
       renderAll();
     }
     function importJsonText(raw) {
@@ -4674,11 +4700,64 @@
       el.className = `rounded-2xl px-3 py-2 text-xs font-semibold ${toneClass}`;
       el.textContent = message;
     }
+    function getBackendApiBase() {
+      return (localStorage.getItem(BACKEND_API_BASE_KEY) || BACKEND_API_BASE).replace(/\/+$/, '');
+    }
+    function setBackendApiBase(value) {
+      const clean = String(value || '').trim().replace(/\/+$/, '');
+      if (clean) localStorage.setItem(BACKEND_API_BASE_KEY, clean);
+      else localStorage.removeItem(BACKEND_API_BASE_KEY);
+      syncBackendSyncControls();
+      setBackendSyncStatus(`API 地址已设为：${getBackendApiBase()}`, 'ok');
+    }
+    function getBackendToken() {
+      return localStorage.getItem(BACKEND_TOKEN_KEY) || '';
+    }
+    function setBackendToken(token) {
+      const clean = String(token || '').trim();
+      if (clean) localStorage.setItem(BACKEND_TOKEN_KEY, clean);
+      else localStorage.removeItem(BACKEND_TOKEN_KEY);
+      syncBackendSyncControls();
+      setBackendSyncStatus(clean ? '访问密钥已保存。' : '访问密钥已清空。', clean ? 'ok' : 'warn');
+    }
+    function isBackendAutoSyncEnabled() {
+      return localStorage.getItem(BACKEND_AUTO_SYNC_KEY) === '1';
+    }
+    function setBackendAutoSyncEnabled(enabled) {
+      localStorage.setItem(BACKEND_AUTO_SYNC_KEY, enabled ? '1' : '0');
+      syncBackendSyncControls();
+      setBackendSyncStatus(enabled ? '自动同步已开启，后续保存会自动上传。' : '自动同步已关闭，仍可手动上传。', enabled ? 'ok' : 'warn');
+      if (!enabled && backendAutoSyncTimer) {
+        clearTimeout(backendAutoSyncTimer);
+        backendAutoSyncTimer = null;
+      }
+    }
+    function syncBackendSyncControls() {
+      if ($('backendApiBaseInput')) $('backendApiBaseInput').value = getBackendApiBase();
+      if ($('backendTokenInput')) $('backendTokenInput').value = getBackendToken();
+      if ($('backendAutoSyncToggle')) $('backendAutoSyncToggle').checked = isBackendAutoSyncEnabled();
+      if ($('backendAutoSyncMeta')) {
+        $('backendAutoSyncMeta').textContent = isBackendAutoSyncEnabled()
+          ? '已开启：保存后约 2 秒自动上传。'
+          : '关闭后只保留手动上传。';
+      }
+    }
+    function scheduleAutoBackendSync() {
+      if (!isBackendAutoSyncEnabled()) return;
+      if (backendAutoSyncTimer) clearTimeout(backendAutoSyncTimer);
+      setBackendSyncStatus('本地已保存，等待自动同步...', 'idle');
+      backendAutoSyncTimer = setTimeout(() => {
+        backendAutoSyncTimer = null;
+        uploadStateToBackend({ confirmFirst:false, reason:'auto', label:'自动同步' });
+      }, 2000);
+    }
     async function backendFetch(path, options = {}) {
-      const res = await fetch(`${BACKEND_API_BASE}${path}`, {
+      const token = getBackendToken();
+      const res = await fetch(`${getBackendApiBase()}${path}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { 'X-Mingxin-Token': token } : {}),
           ...(options.headers || {})
         }
       });
@@ -4695,18 +4774,32 @@
         setBackendSyncStatus(`后端不可用：${err.message || err}`, 'error');
       }
     }
-    async function pushStateToBackend() {
-      if (!confirm('确认把当前浏览器里的数据上传到后端吗？后端旧数据会被覆盖。')) return;
-      setBackendSyncStatus('正在上传本地数据...', 'idle');
+    async function uploadStateToBackend({ confirmFirst = true, reason = 'manual', label = '上传' } = {}) {
+      if (confirmFirst && !confirm('确认把当前浏览器里的数据上传到后端吗？后端旧数据会被覆盖，但后端会先保存一个快照。')) return;
+      if (backendAutoSyncInFlight) {
+        backendAutoSyncQueued = true;
+        return;
+      }
+      backendAutoSyncInFlight = true;
+      setBackendSyncStatus(`正在${label}本地数据...`, 'idle');
       try {
         const data = await backendFetch('/api/state', {
           method:'POST',
-          body: JSON.stringify({ state })
+          body: JSON.stringify({ state, reason })
         });
-        setBackendSyncStatus(`上传完成：${data.updated_at || nowDateTime()}`, 'ok');
+        setBackendSyncStatus(`${label}完成：${data.updated_at || nowDateTime()}`, 'ok');
       } catch (err) {
-        setBackendSyncStatus(`上传失败：${err.message || err}`, 'error');
+        setBackendSyncStatus(`${label}失败：${err.message || err}`, 'error');
+      } finally {
+        backendAutoSyncInFlight = false;
+        if (backendAutoSyncQueued) {
+          backendAutoSyncQueued = false;
+          scheduleAutoBackendSync();
+        }
       }
+    }
+    async function pushStateToBackend() {
+      await uploadStateToBackend({ confirmFirst:true, reason:'manual', label:'上传' });
     }
     async function pullStateFromBackend() {
       if (!confirm('确认从后端恢复数据到当前浏览器吗？当前本地数据会被覆盖。')) return;
@@ -4714,7 +4807,7 @@
       try {
         const data = await backendFetch('/api/state', { method:'GET' });
         if (!data || typeof data.state !== 'object' || data.state === null) throw new Error('后端返回的数据格式不正确');
-        applyWorkspacePayload(data.state);
+        applyWorkspacePayload(data.state, { skipAutoSync:true });
         setBackendSyncStatus(`恢复完成：${data.updated_at || nowDateTime()}`, 'ok');
       } catch (err) {
         setBackendSyncStatus(`恢复失败：${err.message || err}`, 'error');
@@ -5215,6 +5308,21 @@
       if ($('btnBackendHealth')) $('btnBackendHealth').onclick = checkBackendHealth;
       if ($('btnBackendPush')) $('btnBackendPush').onclick = pushStateToBackend;
       if ($('btnBackendPull')) $('btnBackendPull').onclick = pullStateFromBackend;
+      if ($('btnBackendSaveApiBase')) $('btnBackendSaveApiBase').onclick = () => setBackendApiBase($('backendApiBaseInput')?.value || '');
+      if ($('backendApiBaseInput')) {
+        $('backendApiBaseInput').onkeydown = (event) => {
+          if (event.key === 'Enter') setBackendApiBase($('backendApiBaseInput').value || '');
+        };
+      }
+      if ($('btnBackendSaveToken')) $('btnBackendSaveToken').onclick = () => setBackendToken($('backendTokenInput')?.value || '');
+      if ($('backendTokenInput')) {
+        $('backendTokenInput').onkeydown = (event) => {
+          if (event.key === 'Enter') setBackendToken($('backendTokenInput').value || '');
+        };
+      }
+      if ($('backendAutoSyncToggle')) {
+        $('backendAutoSyncToggle').onchange = () => setBackendAutoSyncEnabled($('backendAutoSyncToggle').checked);
+      }
       $('importFile').onchange = async (e) => { const file = e.target.files?.[0]; if (!file) return; importJsonText(await file.text()); e.target.value=''; };
 
       $('btnCloseEditDialog').onclick = closeEditDialog;
@@ -5224,6 +5332,7 @@
 
     bindEvents();
     loadPrefs();
+    syncBackendSyncControls();
     renderAll();
     updateClock();
     setInterval(updateClock, 1000);
