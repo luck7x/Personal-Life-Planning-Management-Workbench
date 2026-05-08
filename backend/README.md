@@ -122,6 +122,8 @@ sudo chown -R www-data:www-data /var/lib/mingxintai
 ```bash
 MINGXIN_API_TOKEN=换成一段只有你知道的长密钥
 MINGXIN_DB_PATH=/var/lib/mingxintai/mingxintai.sqlite3
+NOTIFY_CHANNELS=wxpusher
+WXPUSHER_SPT=换成你的WxPusher极简推送SPT
 ```
 
 安装后端依赖：
@@ -163,6 +165,63 @@ sudo systemctl reload nginx
 - API 地址填写 `https://你的域名`。
 - 访问密钥填写 `MINGXIN_API_TOKEN` 的值。
 - 打开自动同步。
+
+## WxPusher 通知
+
+第一版通知使用 WxPusher 极简推送。SPT 属于密钥，不要写进 GitHub。
+
+本地 WSL2 启动示例：
+
+```bash
+export MINGXIN_API_TOKEN='dev-secret'
+export NOTIFY_CHANNELS='wxpusher'
+export WXPUSHER_SPT='换成你的WxPusher极简推送SPT'
+uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 8000 --reload
+```
+
+测试通知：
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/notifications/test \
+  -H "Content-Type: application/json" \
+  -H "X-Mingxin-Token: dev-secret" \
+  -d '{"title":"明心台测试提醒","content":"后端通知通道已打通。"}'
+```
+
+扫描快到期和逾期任务，先预览不发送：
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/reminders/scan \
+  -H "Content-Type: application/json" \
+  -H "X-Mingxin-Token: dev-secret" \
+  -d '{"soon_hours":24,"dry_run":true}'
+```
+
+确认后发送：
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/reminders/scan \
+  -H "Content-Type: application/json" \
+  -H "X-Mingxin-Token: dev-secret" \
+  -d '{"soon_hours":24,"dry_run":false}'
+```
+
+当前提醒规则：
+
+- `soon_hours` 是扫描上限，真正的“提前多久提醒”由前端 `notificationSettings.leadMinutes` 决定。
+- 默认全局配置是：启用通知、提前 30 分钟、到期提醒、逾期提醒。
+- 任务默认跟随全局规则，也可以在任务编辑里设为“不通知”或“自定义提醒”。
+- 子任务默认继承父任务，也可以在子任务编辑里单独关闭或自定义。
+- 扫描已经逾期的未完成任务。
+- 支持任务和子任务。
+- 备忘任务不提醒。
+- 同一任务/子任务同一到期时间同一类型提醒只发送一次，避免重复刷屏。
+
+VPS 上建议用 systemd timer 或 cron 周期触发扫描。例如每 5 分钟触发一次：
+
+```bash
+*/5 * * * * curl -sS -X POST http://127.0.0.1:8000/api/reminders/scan -H "Content-Type: application/json" -H "X-Mingxin-Token: 你的MINGXIN_API_TOKEN" -d '{"soon_hours":168,"dry_run":false}' >/var/log/mingxintai-reminders.log 2>&1
+```
 
 ## 数据位置
 

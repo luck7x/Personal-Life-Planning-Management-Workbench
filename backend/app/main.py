@@ -12,6 +12,9 @@ from fastapi import Depends, Header, HTTPException, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.notifications import NotificationResult, send_notification
+from app.reminders import ReminderCandidate, collect_due_reminders
+
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CONFIGURED_DB_PATH = os.getenv("MINGXIN_DB_PATH", "").strip()
@@ -22,6 +25,16 @@ DATA_DIR = DB_PATH.parent
 class WorkspaceStateIn(BaseModel):
     state: dict[str, Any] = Field(default_factory=dict)
     reason: str = "manual"
+
+
+class NotificationTestIn(BaseModel):
+    title: str = "明心台测试提醒"
+    content: str = "这是一条来自明心台后端的测试通知。"
+
+
+class ReminderScanIn(BaseModel):
+    soon_hours: int = Field(default=24, ge=1, le=168)
+    dry_run: bool = False
 
 
 def utc_now() -> str:
@@ -68,6 +81,17 @@ def init_db() -> None:
               payload TEXT NOT NULL,
               created_at TEXT NOT NULL,
               reason TEXT NOT NULL DEFAULT 'manual'
+            )
+            """
+        )
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS notification_events (
+              event_key TEXT PRIMARY KEY,
+              kind TEXT NOT NULL,
+              title TEXT NOT NULL,
+              sent_at TEXT NOT NULL,
+              channel_results TEXT NOT NULL
             )
             """
         )
@@ -177,6 +201,55 @@ def restore_workspace_snapshot(snapshot_id: int) -> dict[str, Any]:
     )
 
 
+def notification_event_exists(event_key: str) -> bool:
+    with connect_db() as conn:
+        row = conn.execute(
+            "SELECT event_key FROM notification_events WHERE event_key = ?",
+            (event_key,),
+        ).fetchone()
+    return bool(row)
+
+
+def record_notification_event(candidate: ReminderCandidate, results: list[NotificationResult]) -> None:
+    sent_at = utc_now()
+    payload = json.dumps(
+        [result.__dict__ for result in results],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    with connect_db() as conn:
+        conn.execute(
+            """
+            INSERT OR IGNORE INTO notification_events
+              (event_key, kind, title, sent_at, channel_results)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (candidate.event_key, candidate.kind, candidate.title, sent_at, payload),
+        )
+        conn.commit()
+
+
+def serialize_notification_result(result: NotificationResult) -> dict[str, Any]:
+    return {
+        "channel": result.channel,
+        "ok": result.ok,
+        "detail": result.detail,
+        "response": result.response,
+    }
+
+
+def serialize_reminder(candidate: ReminderCandidate) -> dict[str, Any]:
+    return {
+        "event_key": candidate.event_key,
+        "title": candidate.title,
+        "body": candidate.body,
+        "kind": candidate.kind,
+        "due_at": candidate.due_at,
+        "task_id": candidate.task_id,
+        "subtask_id": candidate.subtask_id,
+    }
+
+
 app = FastAPI(title="Mingxintai Backend", version="0.1.0")
 
 app.add_middleware(
@@ -202,6 +275,7 @@ def health() -> dict[str, Any]:
         "db_path": str(DB_PATH),
         "token_required": bool(os.getenv("MINGXIN_API_TOKEN", "").strip()),
         "dev_no_token": os.getenv("MINGXIN_ALLOW_NO_TOKEN", "").strip() == "1",
+        "wxpusher_configured": bool(os.getenv("WXPUSHER_SPT", "").strip()),
     }
 
 
@@ -233,3 +307,46 @@ def get_snapshot(snapshot_id: int, _: None = Depends(require_api_token)) -> dict
 def restore_snapshot(snapshot_id: int, _: None = Depends(require_api_token)) -> dict[str, Any]:
     init_db()
     return restore_workspace_snapshot(snapshot_id)
+
+
+@app.post("/api/notifications/test")
+def test_notification(payload: NotificationTestIn, _: None = Depends(require_api_token)) -> dict[str, Any]:
+    init_db()
+    results = send_notification(title=payload.title, content=payload.content)
+    return {
+        "ok": any(result.ok for result in results),
+        "results": [serialize_notification_result(result) for result in results],
+    }
+
+
+@app.post("/api/reminders/scan")
+def scan_reminders(payload: ReminderScanIn, _: None = Depends(require_api_token)) -> dict[str, Any]:
+    init_db()
+    workspace = read_workspace_state()["state"]
+    candidates = collect_due_reminders(workspace, soon_hours=payload.soon_hours)
+    unsent = [candidate for candidate in candidates if not notification_event_exists(candidate.event_key)]
+    sent: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+
+    if not payload.dry_run:
+        for candidate in unsent:
+            results = send_notification(title=candidate.title, content=candidate.body)
+            item = {
+                "reminder": serialize_reminder(candidate),
+                "results": [serialize_notification_result(result) for result in results],
+            }
+            if any(result.ok for result in results):
+                record_notification_event(candidate, results)
+                sent.append(item)
+            else:
+                failed.append(item)
+
+    return {
+        "ok": not failed,
+        "dry_run": payload.dry_run,
+        "total_candidates": len(candidates),
+        "already_sent": len(candidates) - len(unsent),
+        "pending": [serialize_reminder(candidate) for candidate in unsent] if payload.dry_run else [],
+        "sent": sent,
+        "failed": failed,
+    }

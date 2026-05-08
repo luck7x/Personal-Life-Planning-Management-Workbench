@@ -1048,6 +1048,46 @@
                   <button id="btnBackendPull" class="w-full px-4 py-3 rounded-2xl bg-purple-50 text-dopamine-purple border border-purple-100 font-black">从后端恢复到本地</button>
                 </div>
               </div>
+              <div class="small-stat p-4 space-y-3">
+                <div>
+                  <div class="font-black">通知提醒</div>
+                  <div class="text-xs text-calm-mute mt-1">任务默认走全局规则；单个任务和子任务可在编辑里关闭或自定义。</div>
+                </div>
+                <label class="flex items-start gap-3 rounded-2xl bg-white border border-calm-line px-3 py-2 cursor-pointer">
+                  <input id="notificationGlobalEnabledToggle" type="checkbox" class="mt-1 accent-[#9B5DE5]">
+                  <span class="min-w-0">
+                    <span class="block text-sm font-black">启用任务通知</span>
+                    <span class="block text-xs text-calm-mute leading-5">关闭后全局默认不提醒，任务仍可单独自定义。</span>
+                  </span>
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label class="block">
+                    <div class="text-xs font-bold text-calm-mute mb-1">默认提前分钟</div>
+                    <input id="notificationLeadMinutesInput" type="number" min="0" max="10080" step="5" class="w-full px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
+                  </label>
+                  <label class="block">
+                    <div class="text-xs font-bold text-calm-mute mb-1">扫描窗口</div>
+                    <div class="px-3 py-2 rounded-2xl border border-calm-line bg-calm-bg text-sm font-semibold text-calm-mute">最多 7 天</div>
+                  </label>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <label class="flex items-center gap-2 rounded-2xl bg-white border border-calm-line px-3 py-2 text-sm font-semibold cursor-pointer">
+                    <input id="notificationAtDueToggle" type="checkbox" class="accent-[#9B5DE5]"> 到期时提醒
+                  </label>
+                  <label class="flex items-center gap-2 rounded-2xl bg-white border border-calm-line px-3 py-2 text-sm font-semibold cursor-pointer">
+                    <input id="notificationOverdueToggle" type="checkbox" class="accent-[#9B5DE5]"> 逾期提醒
+                  </label>
+                </div>
+                <div id="notificationStatus" class="rounded-2xl bg-gray-100 text-calm-mute px-3 py-2 text-xs font-semibold">尚未测试通知。</div>
+                <div class="grid grid-cols-1 gap-2">
+                  <button id="btnNotificationSave" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-black">保存通知配置</button>
+                  <button id="btnNotificationTest" class="w-full px-4 py-3 rounded-2xl bg-amber-50 text-amber-700 border border-amber-100 font-black">发送测试通知</button>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button id="btnReminderPreview" class="px-4 py-3 rounded-2xl bg-white border border-calm-line font-semibold">预览提醒</button>
+                    <button id="btnReminderSend" class="px-4 py-3 rounded-2xl bg-dopamine-purple text-white font-black">发送提醒</button>
+                  </div>
+                </div>
+              </div>
               <div class="small-stat p-4 space-y-2">
                 <button id="btnExportJson" class="w-full px-4 py-3 rounded-2xl bg-dopamine-sky text-white font-black">下载 JSON 备份</button>
                 <button id="btnCopyJson" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-semibold">复制 JSON 到剪贴板</button>
@@ -1558,6 +1598,46 @@
     function taskStatusMeta(status) {
       return TASK_STATUS_OPTIONS.find(item => item.value === status) || TASK_STATUS_OPTIONS[1];
     }
+    function boolFromValue(value, fallback=true) {
+      if (typeof value === 'boolean') return value;
+      if (value == null) return fallback;
+      const text = String(value).trim().toLowerCase();
+      if (['1','true','yes','on','y'].includes(text)) return true;
+      if (['0','false','no','off','n'].includes(text)) return false;
+      return fallback;
+    }
+    function clampLeadMinutes(value, fallback=30) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return fallback;
+      return Math.max(0, Math.min(10080, Math.round(num)));
+    }
+    function normalizeNotificationSettings(settings={}) {
+      const source = settings && typeof settings === 'object' ? settings : {};
+      return {
+        enabled: boolFromValue(source.enabled, true),
+        leadMinutes: clampLeadMinutes(source.leadMinutes, 30),
+        atDue: boolFromValue(source.atDue, true),
+        overdue: boolFromValue(source.overdue, true)
+      };
+    }
+    function normalizeNotificationOverride(config={}, fallbackMode='default') {
+      const source = config && typeof config === 'object' ? config : {};
+      const allowed = fallbackMode === 'inherit' ? ['inherit','off','custom'] : ['default','off','custom'];
+      const mode = allowed.includes(source.mode) ? source.mode : fallbackMode;
+      return {
+        mode,
+        leadMinutes: clampLeadMinutes(source.leadMinutes, 30),
+        atDue: boolFromValue(source.atDue, true),
+        overdue: boolFromValue(source.overdue, true)
+      };
+    }
+    function notificationOverrideLabel(config={}, fallbackMode='default') {
+      const item = normalizeNotificationOverride(config, fallbackMode);
+      if (item.mode === 'off') return '不通知';
+      if (item.mode === 'custom') return `提前 ${item.leadMinutes} 分钟`;
+      if (item.mode === 'inherit') return '继承父任务';
+      return '默认通知';
+    }
     function projectAreaMeta(area) {
       return PROJECT_AREAS.find(item => item.value === area) || PROJECT_AREAS[0];
     }
@@ -1585,6 +1665,7 @@
         startedAt,
         activeStartedAtTs: done ? 0 : activeStartedAtTs,
         activeFocusId: done ? '' : activeFocusId,
+        notification: normalizeNotificationOverride(item.notification, 'inherit'),
         doneAt: done ? String(item.doneAt || nowDateTime()) : ''
       };
     }
@@ -1624,6 +1705,7 @@
         estimate: Math.max(0, Number(item.estimate) || 0),
         context: String(item.context || ''),
         note: String(item.note || item.notes || ''),
+        notification: normalizeNotificationOverride(item.notification, 'default'),
         createdAt,
         startAt,
         start: startTime,
@@ -2045,6 +2127,7 @@
           tasks: normalizeTasksState(parsed.tasks),
           projects: normalizeProjectsState(parsed.projects),
           focus: normalizeFocusState(parsed.focus),
+          notificationSettings: normalizeNotificationSettings(parsed.notificationSettings || parsed.settings?.notifications),
           habits: normalizeHabitsState(parsed.habits),
           foods: normalizeFoodRecords(parsed.foods),
           weights: normalizeWeightRecords(parsed.weights),
@@ -2065,6 +2148,7 @@
           tasks:[],
           projects:[],
           focus:normalizeFocusState({}),
+          notificationSettings:normalizeNotificationSettings({}),
           habits:normalizeHabitsState({}),
           foods:[],
           weights:[],
@@ -2428,6 +2512,7 @@
         estimate: payload.estimate ?? 25,
         context: payload.context || '',
         note: payload.note || '',
+        notification: payload.notification || { mode:'default' },
         createdAt,
         startAt: defaultStart,
         start: payload.start || String(defaultStart).slice(11, 16) || nowTime(),
@@ -2788,7 +2873,8 @@
       task.subtasks.push(normalizeSubtaskItem({
         title: cleanTitle,
         startAt: data.startAt || data.startDate || dateFromDateTime(task.startAt) || todayStr(),
-        dueDate: data.dueDate || data.deadline || task.dueDate || ''
+        dueDate: data.dueDate || data.deadline || task.dueDate || '',
+        notification: data.notification || { mode:'inherit' }
       }));
       saveState();
       renderAll();
@@ -2869,12 +2955,22 @@
         fields:[
           { name:'title', label:'子任务名称', value:subtask.title },
           { name:'startAt', label:'开始日期', type:'date', value:subtask.startAt || dateFromDateTime(subtask.createdAt) || '' },
-          { name:'dueDate', label:'到期日期', type:'date', value:subtask.dueDate || '' }
+          { name:'dueDate', label:'到期日期', type:'date', value:subtask.dueDate || '' },
+          { name:'notificationMode', label:'通知方式', type:'select', value:normalizeNotificationOverride(subtask.notification, 'inherit').mode, options:[{ value:'inherit', label:'继承父任务' }, { value:'off', label:'不通知' }, { value:'custom', label:'自定义提醒' }] },
+          { name:'notificationLeadMinutes', label:'自定义提前分钟', type:'number', value:String(normalizeNotificationOverride(subtask.notification, 'inherit').leadMinutes || 30) },
+          { name:'notificationAtDue', label:'到期时提醒', type:'select', value:normalizeNotificationOverride(subtask.notification, 'inherit').atDue ? 'yes' : 'no', options:[{ value:'yes', label:'提醒' }, { value:'no', label:'不提醒' }] },
+          { name:'notificationOverdue', label:'逾期提醒', type:'select', value:normalizeNotificationOverride(subtask.notification, 'inherit').overdue ? 'yes' : 'no', options:[{ value:'yes', label:'提醒' }, { value:'no', label:'不提醒' }] }
         ],
         onSave:(vals)=>{
           subtask.title = vals.title.trim() || subtask.title;
           subtask.startAt = vals.startAt || '';
           subtask.dueDate = vals.dueDate || '';
+          subtask.notification = normalizeNotificationOverride({
+            mode: vals.notificationMode || 'inherit',
+            leadMinutes: vals.notificationLeadMinutes,
+            atDue: vals.notificationAtDue !== 'no',
+            overdue: vals.notificationOverdue !== 'no'
+          }, 'inherit');
           saveState();
           renderAll();
         },
@@ -2962,6 +3058,7 @@
                 <span>${escapeHtml(today.value ? today.label : bucket.label)}</span>
                 <span>· 子任务 ${summary.done}/${summary.total} · ${summary.progress}%</span>
                 ${project ? `<span>· ${escapeHtml(project.title)}</span>` : ''}
+                <span>· 通知：${escapeHtml(notificationOverrideLabel(task.notification, 'default'))}</span>
                 <span>${dueUrgencyBadge(task.dueDate, todayStr(), task.status, true)}</span>
                 ${isRunning ? `<span>· 开始于 ${escapeHtml(task.startedAt || '')}</span>` : ''}
                 ${sessions.length ? `<span>· 今日专注 ${sessions.length} 次 / ${formatMinutes(sessionMinutes)}</span>` : ''}
@@ -4017,6 +4114,7 @@
                       <div class="pl-6 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-calm-mute">
                         <span><i class="fa-regular fa-calendar-plus mr-1"></i>${subtask.startAt ? escapeHtml(subtask.startAt) : '未设开始'}</span>
                         <span><i class="fa-regular fa-calendar-check mr-1"></i>${subtask.dueDate ? escapeHtml(subtask.dueDate) : '未设到期'}</span>
+                        <span><i class="fa-regular fa-bell mr-1"></i>${escapeHtml(notificationOverrideLabel(subtask.notification, 'inherit'))}</span>
                         <span><i class="fa-regular fa-hourglass-half mr-1"></i>累计 ${formatMinutes(totalMinutes)}${todayMinutes ? ` · 今日 ${formatMinutes(todayMinutes)}` : ''}</span>
                       </div>
                     </div>
@@ -5104,6 +5202,7 @@
         tasks: normalizeTasksState(parsed.tasks),
         projects: normalizeProjectsState(parsed.projects),
         focus: normalizeFocusState(parsed.focus),
+        notificationSettings: normalizeNotificationSettings(parsed.notificationSettings || parsed.settings?.notifications),
         habits: normalizeHabitsState(parsed.habits),
         foods: normalizeFoodRecords(parsed.foods),
         weights: normalizeWeightRecords(parsed.weights),
@@ -5149,6 +5248,79 @@
       el.className = `rounded-2xl px-3 py-2 text-xs font-semibold ${toneClass}`;
       el.textContent = message;
     }
+    function setNotificationStatus(message, tone='idle') {
+      const el = $('notificationStatus');
+      if (!el) return;
+      const toneClass = {
+        ok: 'bg-emerald-50 text-emerald-700 border border-emerald-100',
+        warn: 'bg-amber-50 text-amber-700 border border-amber-100',
+        error: 'bg-rose-50 text-rose-700 border border-rose-100',
+        idle: 'bg-gray-100 text-calm-mute'
+      }[tone] || 'bg-gray-100 text-calm-mute';
+      el.className = `rounded-2xl px-3 py-2 text-xs font-semibold ${toneClass}`;
+      el.textContent = message;
+    }
+    function currentNotificationSettings() {
+      state.notificationSettings = normalizeNotificationSettings(state.notificationSettings);
+      return state.notificationSettings;
+    }
+    function syncNotificationControls() {
+      const settings = currentNotificationSettings();
+      if ($('notificationGlobalEnabledToggle')) $('notificationGlobalEnabledToggle').checked = settings.enabled;
+      if ($('notificationLeadMinutesInput')) $('notificationLeadMinutesInput').value = String(settings.leadMinutes);
+      if ($('notificationAtDueToggle')) $('notificationAtDueToggle').checked = settings.atDue;
+      if ($('notificationOverdueToggle')) $('notificationOverdueToggle').checked = settings.overdue;
+    }
+    function saveNotificationSettingsFromControls() {
+      state.notificationSettings = normalizeNotificationSettings({
+        enabled: !!$('notificationGlobalEnabledToggle')?.checked,
+        leadMinutes: $('notificationLeadMinutesInput')?.value,
+        atDue: !!$('notificationAtDueToggle')?.checked,
+        overdue: !!$('notificationOverdueToggle')?.checked
+      });
+      saveState();
+      renderAll();
+      setNotificationStatus(`通知配置已保存：提前 ${state.notificationSettings.leadMinutes} 分钟。`, 'ok');
+    }
+    function reminderScanHours() {
+      return 168;
+    }
+    async function sendTestNotification() {
+      setNotificationStatus('正在发送测试通知...', 'idle');
+      try {
+        const data = await backendFetch('/api/notifications/test', {
+          method:'POST',
+          body: JSON.stringify({
+            title:'明心台测试提醒',
+            content:`测试通知已触发。当前默认提前 ${currentNotificationSettings().leadMinutes} 分钟。`
+          })
+        });
+        setNotificationStatus(data.ok ? '测试通知已发送，请检查 WxPusher。' : '测试通知未成功，请检查后端环境变量。', data.ok ? 'ok' : 'warn');
+      } catch (err) {
+        setNotificationStatus(`测试失败：${err.message || err}`, 'error');
+      }
+    }
+    async function scanReminderNotifications(dryRun=true) {
+      saveNotificationSettingsFromControls();
+      setNotificationStatus(dryRun ? '正在同步并预览待提醒任务...' : '正在同步并发送待提醒任务...', 'idle');
+      try {
+        await backendFetch('/api/state', {
+          method:'POST',
+          body: JSON.stringify({ state, reason: dryRun ? 'reminder-preview' : 'reminder-send' })
+        });
+        const data = await backendFetch('/api/reminders/scan', {
+          method:'POST',
+          body: JSON.stringify({ soon_hours: reminderScanHours(), dry_run: dryRun })
+        });
+        if (dryRun) {
+          setNotificationStatus(`预览完成：待发送 ${data.pending?.length || 0} 条，已去重 ${data.already_sent || 0} 条。`, 'ok');
+        } else {
+          setNotificationStatus(`发送完成：成功 ${data.sent?.length || 0} 条，失败 ${data.failed?.length || 0} 条，已去重 ${data.already_sent || 0} 条。`, data.failed?.length ? 'warn' : 'ok');
+        }
+      } catch (err) {
+        setNotificationStatus(`扫描失败：${err.message || err}`, 'error');
+      }
+    }
     function getBackendApiBase() {
       return (localStorage.getItem(BACKEND_API_BASE_KEY) || BACKEND_API_BASE).replace(/\/+$/, '');
     }
@@ -5190,6 +5362,7 @@
           ? '已开启：保存后约 2 秒自动上传。'
           : '关闭后只保留手动上传。';
       }
+      syncNotificationControls();
     }
     function scheduleAutoBackendSync() {
       if (!isBackendAutoSyncEnabled()) return;
@@ -5339,7 +5512,11 @@
           { name:'dueDate', label:'截止日期', type:'date', value:task.dueDate || '' },
           { name:'start', label:'开始时间', type:'time', value:parseHM(task.start) || nowTime() },
           { name:'end', label:'结束时间', value:task.end || '24:00' },
-          { name:'estimate', label:'预计分钟', value:String(task.estimate || '') }
+          { name:'estimate', label:'预计分钟', value:String(task.estimate || '') },
+          { name:'notificationMode', label:'通知方式', type:'select', value:normalizeNotificationOverride(task.notification, 'default').mode, options:[{ value:'default', label:'跟随全局默认' }, { value:'off', label:'不通知' }, { value:'custom', label:'自定义提醒' }] },
+          { name:'notificationLeadMinutes', label:'自定义提前分钟', type:'number', value:String(normalizeNotificationOverride(task.notification, 'default').leadMinutes || 30) },
+          { name:'notificationAtDue', label:'到期时提醒', type:'select', value:normalizeNotificationOverride(task.notification, 'default').atDue ? 'yes' : 'no', options:[{ value:'yes', label:'提醒' }, { value:'no', label:'不提醒' }] },
+          { name:'notificationOverdue', label:'逾期提醒', type:'select', value:normalizeNotificationOverride(task.notification, 'default').overdue ? 'yes' : 'no', options:[{ value:'yes', label:'提醒' }, { value:'no', label:'不提醒' }] }
         ],
         onSave:(vals)=>{
           const wasDone = task.status === 'done';
@@ -5351,6 +5528,12 @@
           task.start = parseHM(vals.start) || task.start || nowTime();
           task.end = parseHM(vals.end) || (String(vals.end || '').trim() === '24:00' ? '24:00' : task.end || '24:00');
           task.estimate = Math.max(0, Number(vals.estimate) || 0);
+          task.notification = normalizeNotificationOverride({
+            mode: vals.notificationMode || 'default',
+            leadMinutes: vals.notificationLeadMinutes,
+            atDue: vals.notificationAtDue !== 'no',
+            overdue: vals.notificationOverdue !== 'no'
+          }, 'default');
           const nextStatus = taskStatusMeta(vals.status).value;
           if (nextStatus === 'done' && !wasDone) {
             finishTask(task.id);
@@ -5779,6 +5962,22 @@
       if ($('backendAutoSyncToggle')) {
         $('backendAutoSyncToggle').onchange = () => setBackendAutoSyncEnabled($('backendAutoSyncToggle').checked);
       }
+      if ($('btnNotificationSave')) $('btnNotificationSave').onclick = saveNotificationSettingsFromControls;
+      if ($('btnNotificationTest')) $('btnNotificationTest').onclick = sendTestNotification;
+      if ($('btnReminderPreview')) $('btnReminderPreview').onclick = () => scanReminderNotifications(true);
+      if ($('btnReminderSend')) $('btnReminderSend').onclick = () => scanReminderNotifications(false);
+      ['notificationGlobalEnabledToggle','notificationLeadMinutesInput','notificationAtDueToggle','notificationOverdueToggle'].forEach(id => {
+        const el = $(id);
+        if (!el) return;
+        el.onchange = () => {
+          state.notificationSettings = normalizeNotificationSettings({
+            enabled: !!$('notificationGlobalEnabledToggle')?.checked,
+            leadMinutes: $('notificationLeadMinutesInput')?.value,
+            atDue: !!$('notificationAtDueToggle')?.checked,
+            overdue: !!$('notificationOverdueToggle')?.checked
+          });
+        };
+      });
       $('importFile').onchange = async (e) => { const file = e.target.files?.[0]; if (!file) return; importJsonText(await file.text()); e.target.value=''; };
 
       $('btnCloseEditDialog').onclick = closeEditDialog;
