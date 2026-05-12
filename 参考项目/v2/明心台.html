@@ -246,6 +246,11 @@
     .workflow-subtask-row:hover { background: linear-gradient(90deg, rgba(77,157,224,.12), rgba(255,255,255,.96)); }
     .workflow-subtask-title { overflow-wrap: anywhere; line-height: 1.35; }
     .workflow-subtask-rail { width: 1.65rem; align-self: stretch; border-left: 2px solid rgba(77,157,224,.28); border-bottom: 2px solid rgba(77,157,224,.18); border-bottom-left-radius: .8rem; }
+    .workflow-lane-shell { border-radius: 1.15rem; border-width: 1px; overflow: hidden; }
+    .workflow-drag-handle { cursor: grab; touch-action: none; }
+    .workflow-drag-handle:active { cursor: grabbing; }
+    .workflow-task-row.dragging { opacity: .55; background: rgba(77,157,224,.1); }
+    .workflow-lane-drop-active { outline: 2px dashed rgba(77,157,224,.35); outline-offset: -6px; }
     .workflow-board-col { border-radius: 1.2rem; background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,255,.94)); border: 1px solid #ECEEF5; overflow: hidden; box-shadow: 0 12px 34px -24px rgba(0,0,0,.18); }
     .workflow-board-head { padding: .9rem 1rem; border-bottom: 1px solid #ECEEF5; }
     .workflow-board-body { padding: 1rem; max-height: 640px; overflow: auto; }
@@ -532,7 +537,7 @@
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
             <div>
               <h1 class="text-2xl font-black flex items-center gap-2"><i class="fa-solid fa-diagram-project text-dopamine-sky"></i> 星图工坊</h1>
-              <p class="text-calm-mute mt-1">先管理项目，再拆解任务；星图工坊只负责规划，明心总览负责具体执行和时间块。</p>
+              <p class="text-calm-mute mt-1">先看今天怎么行动，再扫未来、备忘和想法；项目作为归属容器放在下方管理。</p>
             </div>
             <div class="flex flex-wrap gap-2 items-center">
               <input id="workflowDate" type="date" class="px-3 py-2 rounded-2xl border border-calm-line bg-white">
@@ -548,8 +553,65 @@
         <div class="soft-card p-5 md:p-6">
           <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
             <div>
+              <h2 class="text-xl font-black flex items-center gap-2"><i class="fa-solid fa-list-check text-dopamine-sky"></i> 任务</h2>
+              <p class="text-sm text-calm-mute mt-1">任务按真实使用流分区：今日执行、未来待办、备忘、想法池和已完成。</p>
+            </div>
+            <div class="flex flex-wrap gap-2 items-center">
+              <select id="workflowTaskFilter" class="px-3 py-2 rounded-2xl border border-calm-line bg-white">
+                <option value="all">显示全部</option>
+                <option value="today">今日执行</option>
+                <option value="future">未来待办</option>
+                <option value="memo">备忘</option>
+                <option value="idea">想法池</option>
+                <option value="done">已完成</option>
+                <option value="q1">重要且紧急</option>
+                <option value="q2">重要不紧急</option>
+                <option value="q3">紧急不重要</option>
+                <option value="q4">不紧急不重要</option>
+              </select>
+              <select id="workflowProjectFilterSelect" class="px-3 py-2 rounded-2xl border border-calm-line bg-white min-w-[180px]"></select>
+            </div>
+          </div>
+
+          <div class="small-stat p-4 mb-5">
+            <div class="font-black mb-3">新建任务</div>
+            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_180px_150px_170px_150px_120px] gap-2">
+              <input id="workflowCaptureText" class="px-3 py-3 rounded-2xl border border-calm-line bg-white" placeholder="任务名称，如：重画 Figure 2 的误差棒">
+              <select id="workflowCaptureProject" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
+                <option value="">选择所属项目</option>
+              </select>
+              <select id="workflowCaptureLane" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
+                <option value="today">今日执行</option>
+                <option value="future" selected>未来待办</option>
+                <option value="memo">备忘</option>
+                <option value="idea">想法池</option>
+              </select>
+              <select id="workflowCaptureQuadrant" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
+                <option value="q1">重要且紧急</option>
+                <option value="q2" selected>重要不紧急</option>
+                <option value="q3">紧急不重要</option>
+                <option value="q4">不紧急不重要</option>
+              </select>
+              <input id="workflowCaptureDue" type="date" class="px-3 py-3 rounded-2xl border border-calm-line bg-white" title="截止日期，可留空">
+              <button id="btnWorkflowCapture" class="px-4 py-3 rounded-2xl bg-dopamine-sky text-white font-black">新增任务</button>
+            </div>
+            <input id="workflowCaptureEstimate" type="hidden" value="25">
+          </div>
+
+          <details id="workflowTaskTableDetails" class="rounded-2xl border border-calm-line bg-white overflow-hidden" open>
+            <summary class="cursor-pointer select-none px-4 py-4 bg-calm-bg font-black flex items-center justify-between gap-3">
+              <span><i class="fa-solid fa-table-list text-dopamine-sky mr-2"></i>任务总表</span>
+              <span class="text-xs text-calm-mute">点击这里折叠 / 展开</span>
+            </summary>
+            <div id="workflowTaskTable" class="workflow-table-wrap min-w-0"></div>
+          </details>
+        </div>
+
+        <div class="soft-card p-5 md:p-6">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
+            <div>
               <h2 class="text-xl font-black flex items-center gap-2"><i class="fa-solid fa-folder-tree text-dopamine-purple"></i> 项目</h2>
-              <p class="text-sm text-calm-mute mt-1">项目是长期目标：有结果、有阶段、有截止；任务只是项目下面的具体动作。</p>
+              <p class="text-sm text-calm-mute mt-1">项目是长期容器：负责归属、结果、阶段和归档；任务才负责每天怎么行动。</p>
             </div>
             <span id="workflowProjectBadge" class="pill bg-dopamine-purple/10 text-dopamine-purple">0 个</span>
           </div>
@@ -582,61 +644,6 @@
               <div id="workflowProjectList" class="space-y-3"></div>
             </div>
           </div>
-        </div>
-
-        <div class="soft-card p-5 md:p-6">
-          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3 mb-5">
-            <div>
-              <h2 class="text-xl font-black flex items-center gap-2"><i class="fa-solid fa-list-check text-dopamine-sky"></i> 任务</h2>
-              <p class="text-sm text-calm-mute mt-1">任务是可执行动作：必须能归属项目、判断紧急程度、设置状态和关键时间。</p>
-            </div>
-            <div class="flex flex-wrap gap-2 items-center">
-              <select id="workflowTaskFilter" class="px-3 py-2 rounded-2xl border border-calm-line bg-white">
-                <option value="all">显示全部</option>
-                <option value="today">只看今日候选</option>
-                <option value="q1">重要且紧急</option>
-                <option value="q2">重要不紧急</option>
-                <option value="q3">紧急不重要</option>
-                <option value="q4">不紧急不重要</option>
-              </select>
-              <select id="workflowProjectFilterSelect" class="px-3 py-2 rounded-2xl border border-calm-line bg-white min-w-[180px]"></select>
-            </div>
-          </div>
-
-          <div class="small-stat p-4 mb-5">
-            <div class="font-black mb-3">新建任务</div>
-            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1.3fr)_180px_170px_150px_150px_120px] gap-2">
-              <input id="workflowCaptureText" class="px-3 py-3 rounded-2xl border border-calm-line bg-white" placeholder="任务名称，如：重画 Figure 2 的误差棒">
-              <select id="workflowCaptureProject" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
-                <option value="">选择所属项目</option>
-              </select>
-              <select id="workflowCaptureQuadrant" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
-                <option value="q1">重要且紧急</option>
-                <option value="q2" selected>重要不紧急</option>
-                <option value="q3">紧急不重要</option>
-                <option value="q4">不紧急不重要</option>
-              </select>
-              <select id="workflowCaptureStatus" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
-                <option value="planned">计划中</option>
-                <option value="todo" selected>没开始</option>
-                <option value="active">进行中</option>
-                <option value="memo">备忘</option>
-                <option value="overdue">逾期</option>
-                <option value="done">完成</option>
-              </select>
-              <input id="workflowCaptureDue" type="date" class="px-3 py-3 rounded-2xl border border-calm-line bg-white" title="到期时间">
-              <button id="btnWorkflowCapture" class="px-4 py-3 rounded-2xl bg-dopamine-sky text-white font-black">新增任务</button>
-            </div>
-            <input id="workflowCaptureEstimate" type="hidden" value="25">
-          </div>
-
-          <details id="workflowTaskTableDetails" class="rounded-2xl border border-calm-line bg-white overflow-hidden" open>
-            <summary class="cursor-pointer select-none px-4 py-4 bg-calm-bg font-black flex items-center justify-between gap-3">
-              <span><i class="fa-solid fa-table-list text-dopamine-sky mr-2"></i>任务总表</span>
-              <span class="text-xs text-calm-mute">点击这里折叠 / 展开</span>
-            </summary>
-            <div id="workflowTaskTable" class="workflow-table-wrap min-w-0"></div>
-          </details>
         </div>
       </section>
 
@@ -1235,6 +1242,13 @@
       { value:'overdue', label:'逾期', color:'bg-rose-100 text-rose-700' },
       { value:'done', label:'完成', color:'bg-emerald-100 text-emerald-700' }
     ];
+    const WORKFLOW_LANES = [
+      { value:'today', label:'今日执行', short:'今天', icon:'fa-bolt', color:'bg-rose-100 text-rose-700', shell:'border-rose-100 bg-rose-50/35', desc:'每天必看，只放今天真的要动手的事。' },
+      { value:'future', label:'未来待办', short:'未来', icon:'fa-calendar-check', color:'bg-orange-100 text-orange-700', shell:'border-orange-100 bg-orange-50/30', desc:'有计划日或截止日，但今天不一定做。' },
+      { value:'memo', label:'备忘', short:'提醒', icon:'fa-bell', color:'bg-purple-100 text-purple-700', shell:'border-purple-100 bg-purple-50/30', desc:'轻量提醒，不强行项目化，不进入专注压力。' },
+      { value:'idea', label:'想法池', short:'想法', icon:'fa-lightbulb', color:'bg-sky-100 text-sky-700', shell:'border-sky-100 bg-sky-50/30', desc:'无期限好想法，先收着，后面再升级。' },
+      { value:'done', label:'已完成', short:'完成', icon:'fa-circle-check', color:'bg-emerald-100 text-emerald-700', shell:'border-emerald-100 bg-emerald-50/25', desc:'默认折叠，用来扫今日和本周成果。', collapsed:true }
+    ];
     const PROJECT_AREAS = [
       { value:'research', label:'科研 / 实验' },
       { value:'writing', label:'写作 / 文稿' },
@@ -1627,6 +1641,58 @@
     function taskStatusMeta(status) {
       return TASK_STATUS_OPTIONS.find(item => item.value === status) || TASK_STATUS_OPTIONS[1];
     }
+    function taskLaneMeta(lane) {
+      return WORKFLOW_LANES.find(item => item.value === lane) || WORKFLOW_LANES[1];
+    }
+    function taskCreatedTimeValue(item={}) {
+      const parsed = Date.parse(String(item.createdAt || '').replace(' ', 'T'));
+      return Number.isFinite(parsed) ? parsed : Date.now();
+    }
+    function inferTaskLane(item={}) {
+      if (WORKFLOW_LANES.some(lane => lane.value === item.lane)) return item.lane;
+      if (item.status === 'done' || item.gtdBucket === 'done') return 'done';
+      if (item.status === 'memo' || item.gtdBucket === 'memo') return 'memo';
+      if (item.todayBucket) return 'today';
+      if (item.dueDate || item.gtdBucket === 'next' || item.status === 'planned') return 'future';
+      return 'idea';
+    }
+    function normalizeTaskLaneOrder(item={}, lane='future') {
+      const current = Number(item.laneOrder ?? item.sortOrder);
+      if (Number.isFinite(current) && current > 0) return current;
+      return taskCreatedTimeValue(item);
+    }
+    function taskDeadlineIsPast(task, baseDate=todayStr()) {
+      return !!task?.dueDate && diffDays(task.dueDate, baseDate) > 0;
+    }
+    function syncTaskLaneSideEffects(task) {
+      if (!task) return;
+      const lane = taskLaneMeta(task.lane).value;
+      if (lane === 'today') {
+        task.todayBucket = task.todayBucket || 'should';
+        if (task.status === 'memo' || task.status === 'done' || task.status === 'overdue') task.status = 'todo';
+        if (task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') task.gtdBucket = 'next';
+      } else if (lane === 'memo') {
+        task.status = 'memo';
+        task.gtdBucket = 'memo';
+        task.todayBucket = '';
+      } else if (lane === 'idea') {
+        if (['done','memo','overdue','active'].includes(task.status)) task.status = 'planned';
+        task.gtdBucket = 'someday';
+        task.todayBucket = '';
+      } else if (lane === 'done') {
+        task.status = 'done';
+        task.gtdBucket = 'done';
+        task.todayBucket = '';
+        task.doneAt = task.doneAt || nowDateTime();
+      } else {
+        if (task.status === 'memo' || task.status === 'done' || task.status === 'active') task.status = 'todo';
+        if (task.status === 'overdue' && !taskDeadlineIsPast(task)) task.status = 'todo';
+        if (task.status === 'overdue') task.gtdBucket = 'overdue';
+        else if (task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') task.gtdBucket = task.projectId ? 'next' : 'inbox';
+        task.todayBucket = '';
+        if (task.status !== 'overdue') task.doneAt = '';
+      }
+    }
     function boolFromValue(value, fallback=true) {
       if (typeof value === 'boolean') return value;
       if (value == null) return fallback;
@@ -1722,15 +1788,18 @@
       const startedAt = String(item.startedAt || '');
       const activeStartedAtTs = status === 'active' ? (Number(item.activeStartedAtTs) || 0) : 0;
       const activeFocusId = status === 'active' ? String(item.activeFocusId || '') : '';
-      return {
+      const lane = taskLaneMeta(inferTaskLane(item)).value;
+      const normalized = {
         id: String(item.id || uid('task')),
         title,
         status,
+        lane,
+        laneOrder: normalizeTaskLaneOrder(item, lane),
         projectId: String(item.projectId || ''),
         gtdBucket: bucket,
         quadrant,
         todayBucket: status === 'done' || status === 'memo' || status === 'overdue' ? '' : todayBucket,
-        dueDate: String(item.dueDate || dateFromDateTime(startAt) || dateFromDateTime(createdAt) || ''),
+        dueDate: String(item.dueDate || item.deadline || ''),
         estimate: Math.max(0, Number(item.estimate) || 0),
         context: String(item.context || ''),
         note: String(item.note || item.notes || ''),
@@ -1745,6 +1814,8 @@
         activeFocusId,
         doneAt: String(item.doneAt || '')
       };
+      syncTaskLaneSideEffects(normalized);
+      return normalized;
     }
 
     function normalizeTasksState(tasks) {
@@ -2533,11 +2604,13 @@
         id: uid('task'),
         title: payload.title || '',
         status: payload.status || 'todo',
+        lane: payload.lane || '',
+        laneOrder: payload.laneOrder || Date.now(),
         projectId: payload.projectId || '',
         gtdBucket: payload.gtdBucket || 'next',
         quadrant: payload.quadrant || 'q2',
         todayBucket: payload.todayBucket || '',
-        dueDate: payload.dueDate || dateFromDateTime(defaultStart) || todayStr(),
+        dueDate: payload.dueDate || '',
         estimate: payload.estimate ?? 25,
         context: payload.context || '',
         note: payload.note || '',
@@ -2655,7 +2728,7 @@
       return true;
     }
     function taskDeadlineDate(task) {
-      return task?.dueDate || dateFromDateTime(task?.startAt) || dateFromDateTime(task?.createdAt) || '';
+      return task?.dueDate || '';
     }
     function dueUrgencyMeta(dueDate='', baseDate=todayStr(), status='') {
       const cleanDate = dateFromDateTime(dueDate) || String(dueDate || '').slice(0, 10);
@@ -2689,6 +2762,12 @@
         if (!['planned','todo','active','overdue'].includes(task.status)) return;
         if (taskHasStartTrace(task)) return;
         const deadline = taskDeadlineDate(task);
+        if ((!deadline || !taskDeadlineIsPast(task, baseDate)) && task.status === 'overdue') {
+          task.status = 'todo';
+          task.gtdBucket = task.projectId ? 'next' : 'inbox';
+          changed = true;
+          return;
+        }
         if (deadline && diffDays(deadline, baseDate) > 0) {
           if (task.status !== 'overdue' || task.gtdBucket !== 'overdue' || task.todayBucket) changed = true;
           task.status = 'overdue';
@@ -2797,6 +2876,8 @@
       const startDateTime = nowDateTime();
       const focusId = uid('focus');
       task.status = 'active';
+      task.lane = 'today';
+      task.laneOrder = task.laneOrder || nextLaneOrder('today');
       task.gtdBucket = task.gtdBucket === 'inbox' || task.gtdBucket === 'done' ? 'next' : task.gtdBucket;
       task.todayBucket = task.todayBucket || 'should';
       task.doneAt = '';
@@ -2813,6 +2894,8 @@
       if (taskIsRunning(task)) finishActiveFocusRunForTask(task);
       (Array.isArray(task.subtasks) ? task.subtasks : []).forEach(subtask => finishActiveFocusRunForSubtask(task, subtask));
       task.status = 'done';
+      task.lane = 'done';
+      task.laneOrder = nextLaneOrder('done');
       task.gtdBucket = 'done';
       task.todayBucket = '';
       task.doneAt = nowDateTime();
@@ -2853,10 +2936,14 @@
       if (task.status === 'done') {
         task.gtdBucket = 'done';
         task.todayBucket = '';
+        task.lane = 'done';
+        task.laneOrder = task.laneOrder || nextLaneOrder('done');
       } else if (task.status === 'memo') {
         task.gtdBucket = 'memo';
         task.todayBucket = '';
         task.doneAt = '';
+        task.lane = 'memo';
+        task.laneOrder = task.laneOrder || nextLaneOrder('memo');
       } else if (task.status === 'overdue') {
         task.gtdBucket = 'overdue';
         task.todayBucket = '';
@@ -2866,6 +2953,8 @@
       } else if (task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') {
         task.gtdBucket = 'next';
       }
+      task.lane = taskLaneMeta(task.lane).value;
+      syncTaskLaneSideEffects(task);
       saveState();
       renderAll();
       if (wasRunning && nextStatus !== 'active') {
@@ -2891,8 +2980,46 @@
       renderAll();
     }
     function setTaskQuadrant(id, quadrant) { updateTaskField(id, { quadrant: taskQuadrantMeta(quadrant).value }); }
-    function setTaskTodayBucket(id, bucket) { updateTaskField(id, { todayBucket: todayBucketMeta(bucket).value }); }
+    function setTaskTodayBucket(id, bucket) {
+      const cleanBucket = todayBucketMeta(bucket).value;
+      updateTaskField(id, { todayBucket: cleanBucket, lane: cleanBucket ? 'today' : 'future' });
+    }
     function setTaskProject(id, projectId) { updateTaskField(id, { projectId }); }
+    function setTaskLane(id, laneValue) {
+      const task = state.tasks.find(item => item.id === id);
+      if (!task) return;
+      const lane = taskLaneMeta(laneValue).value;
+      if (lane === 'done' && task.status !== 'done') return finishTask(id);
+      if (lane === task.lane) return;
+      if (taskIsRunning(task) && lane !== 'today') finishActiveFocusRunForTask(task);
+      task.lane = lane;
+      task.laneOrder = nextLaneOrder(lane);
+      syncTaskLaneSideEffects(task);
+      saveState();
+      renderAll();
+    }
+    function tasksInLane(lane) {
+      return state.tasks
+        .filter(task => taskLaneMeta(task.lane).value === lane)
+        .sort((a, b) => (Number(a.laneOrder) || 0) - (Number(b.laneOrder) || 0) || taskCreatedTimeValue(a) - taskCreatedTimeValue(b));
+    }
+    function nextLaneOrder(lane) {
+      const orders = tasksInLane(lane).map(task => Number(task.laneOrder) || 0);
+      return orders.length ? Math.max(...orders) + 1000 : Date.now();
+    }
+    function reorderTaskWithinLane(taskId, targetTaskId) {
+      if (!taskId || !targetTaskId || taskId === targetTaskId) return;
+      const moving = state.tasks.find(task => task.id === taskId);
+      const target = state.tasks.find(task => task.id === targetTaskId);
+      if (!moving || !target || moving.lane !== target.lane) return;
+      const laneTasks = tasksInLane(moving.lane).filter(task => task.id !== moving.id);
+      const targetIndex = laneTasks.findIndex(task => task.id === target.id);
+      if (targetIndex < 0) return;
+      laneTasks.splice(targetIndex, 0, moving);
+      laneTasks.forEach((task, index) => { task.laneOrder = (index + 1) * 1000; });
+      saveState();
+      renderAll();
+    }
     function addSubtaskToTask(id, payload) {
       const task = state.tasks.find(item => item.id === id);
       const data = typeof payload === 'object' && payload !== null ? payload : { title: payload };
@@ -3824,14 +3951,17 @@
       if (!title) { alert('请先填写任务名称。'); return; }
       const projectId = $('workflowCaptureProject')?.value || workflowSelectedProjectId || '';
       const estimate = Math.max(0, Number($('workflowCaptureEstimate')?.value) || 25);
-      const status = taskStatusMeta($('workflowCaptureStatus')?.value).value;
+      const lane = taskLaneMeta($('workflowCaptureLane')?.value || 'future').value;
+      const status = lane === 'memo' ? 'memo' : lane === 'done' ? 'done' : 'todo';
       createTask({
         title,
         projectId,
+        lane,
+        laneOrder: nextLaneOrder(lane),
         status,
         gtdBucket: status === 'done' ? 'done' : status === 'memo' ? 'memo' : status === 'overdue' ? 'overdue' : (projectId ? 'next' : 'inbox'),
         quadrant: $('workflowCaptureQuadrant')?.value || 'q2',
-        todayBucket: '',
+        todayBucket: lane === 'today' ? 'should' : '',
         dueDate: $('workflowCaptureDue')?.value || '',
         estimate,
         startedAt: '',
@@ -3843,7 +3973,7 @@
       if ($('workflowCaptureDue')) $('workflowCaptureDue').value = '';
       if ($('workflowCaptureEstimate')) $('workflowCaptureEstimate').value = '25';
       if ($('workflowCaptureQuadrant')) $('workflowCaptureQuadrant').value = 'q2';
-      if ($('workflowCaptureStatus')) $('workflowCaptureStatus').value = 'todo';
+      if ($('workflowCaptureLane')) $('workflowCaptureLane').value = 'future';
       if ($('workflowCaptureProject')) $('workflowCaptureProject').value = workflowSelectedProjectId || '';
       saveState();
       renderAll();
@@ -3925,22 +4055,17 @@
       const openTasks = allTasks.filter(taskOpen);
       const activeProjects = allProjects.filter(item => item.status === 'active').length;
       const unlinkedTasks = openTasks.filter(item => !item.projectId || item.gtdBucket === 'inbox');
-      const nextTasks = openTasks.filter(item => item.gtdBucket === 'next');
-      const waitingTasks = openTasks.filter(item => item.gtdBucket === 'waiting');
-      const mustTasks = openTasks.filter(item => item.todayBucket === 'must');
-      const shouldTasks = openTasks.filter(item => item.todayBucket === 'should');
-      const couldTasks = openTasks.filter(item => item.todayBucket === 'could');
+      const laneCounts = Object.fromEntries(WORKFLOW_LANES.map(lane => [lane.value, allTasks.filter(item => item.lane === lane.value).length]));
       const dueSoonTasks = openTasks.filter(item => item.dueDate && diffDays(date, item.dueDate) >= 0 && diffDays(date, item.dueDate) <= 7);
-      const memoTasks = allTasks.filter(item => item.status === 'memo');
       const overdueTasks = allTasks.filter(item => item.status === 'overdue');
       const doneTasks = allTasks.filter(item => item.status === 'done');
 
       $('workflowStats').innerHTML = [
         { label:'项目总数', value: allProjects.length, color:'text-dopamine-purple', note:'长期目标池' },
         { label:'进行中项目', value: activeProjects, color:'text-dopamine-mint', note:'当前需要推进' },
-        { label:'任务总数', value: allTasks.length, color:'text-dopamine-sky', note:'全部任务记录' },
-        { label:'未完成任务', value: openTasks.length, color:'text-dopamine-pink', note:'计划中 / 没开始 / 进行中' },
-        { label:'7 天内到期', value: dueSoonTasks.length, color:'text-dopamine-yellow', note:'需要提前安排' },
+        { label:'今日执行', value: laneCounts.today || 0, color:'text-dopamine-pink', note:'每天第一眼先看这里' },
+        { label:'未来待办', value: laneCounts.future || 0, color:'text-dopamine-orange', note:'有计划或截止，但不抢今天' },
+        { label:'7 天内到期', value: dueSoonTasks.length, color:'text-dopamine-yellow', note:'只强化，不打乱排序' },
         { label:'未归项目', value: unlinkedTasks.length, color:'text-dopamine-orange', note:'需要归档清理' }
       ].map(item => `
         <div class="workflow-metric-card p-4">
@@ -3974,7 +4099,7 @@
           icon:'fa-list-check',
           color:'text-dopamine-sky',
           title:'任务层',
-          lines:[`下一步 ${nextTasks.length} 项`, `备忘 ${memoTasks.length} 项`, `逾期 ${overdueTasks.length} 项`, `已完成 ${doneTasks.length} 项`]
+          lines:[`今日执行 ${laneCounts.today || 0} 项`, `未来待办 ${laneCounts.future || 0} 项`, `备忘 ${laneCounts.memo || 0} 项`, `想法池 ${laneCounts.idea || 0} 项`]
         }
       ].map(card => `
         <div class="rounded-2xl border bg-gradient-to-r ${card.tone} p-4">
@@ -3990,8 +4115,8 @@
         note: opt.label
       }));
       const todayStats = [
-        { label:'今日必做', value: mustTasks.length, color:'bg-rose-100 text-rose-700', note:'Must' },
-        { label:'今日应该', value: shouldTasks.length + couldTasks.length, color:'bg-amber-100 text-amber-700', note:'Should / Could' }
+        { label:'今日执行', value: laneCounts.today || 0, color:'bg-rose-100 text-rose-700', note:'可拖拽排序' },
+        { label:'已完成', value: laneCounts.done || doneTasks.length, color:'bg-emerald-100 text-emerald-700', note:'默认折叠' }
       ];
       $('workflowQuadrantSummary').innerHTML = [...quadrantStats, ...todayStats].map(item => `
         <div class="workflow-kpi-strip p-3">
@@ -4098,30 +4223,28 @@
       const filter = $('workflowTaskFilter').value || 'all';
       const scopedTasks = workflowSelectedProjectId ? allTasks.filter(item => item.projectId === workflowSelectedProjectId) : allTasks;
       const filteredTasks = scopedTasks.filter(task => {
-        if (filter === 'today') return !!task.todayBucket && task.status !== 'done';
+        if (WORKFLOW_LANES.some(lane => lane.value === filter)) return task.lane === filter;
         if (QUADRANT_OPTIONS.some(opt => opt.value === filter)) return task.quadrant === filter;
         return true;
       }).sort((a, b) => {
-        const statusOrder = { overdue:0, active:1, todo:2, planned:3, memo:4, done:5 };
-        return (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9)
-          || (a.dueDate || '9999-99-99').localeCompare(b.dueDate || '9999-99-99')
-          || (b.createdAt || '').localeCompare(a.createdAt || '');
+        return (Number(a.laneOrder) || 0) - (Number(b.laneOrder) || 0)
+          || taskCreatedTimeValue(a) - taskCreatedTimeValue(b);
       });
 
       function compactDateTime(ts) {
-        return ts ? escapeHtml(String(ts).slice(0, 16)) : '—';
+        return ts ? escapeHtml(String(ts).slice(0, 16).replace('T', ' ')) : '—';
       }
       function renderTaskRows(items) {
         if (!items.length) return '<div class="px-4 py-6 text-sm text-calm-mute border-t border-calm-line">这一组暂无任务。</div>';
         return items.map(task => {
           const project = projectById(task.projectId);
           const quadrant = taskQuadrantMeta(task.quadrant);
-          const today = todayBucketMeta(task.todayBucket);
+          const lane = taskLaneMeta(task.lane);
+          const status = taskStatusMeta(task.status);
           const summary = taskSubtaskSummary(task);
           const completion = summary.progress;
           const canRun = !['done','memo'].includes(task.status);
           const isRunning = taskIsRunning(task);
-          const todayDisabled = ['done','memo','overdue'].includes(task.status);
           const subtaskRowsHtml = Array.isArray(task.subtasks) && task.subtasks.length ? task.subtasks.map(subtask => {
             const totalMinutes = subtaskFocusMinutes(task.id, subtask.id);
             const todayMinutes = subtaskFocusMinutes(task.id, subtask.id, todayStr());
@@ -4130,7 +4253,7 @@
             const subtaskStatusLabel = subtask.done ? '已完成' : isSubtaskRunning ? '专注中' : '未完成';
             const subtaskStatusClass = subtask.done ? 'bg-green-50 text-dopamine-mint' : isSubtaskRunning ? 'bg-sky-50 text-dopamine-sky' : 'bg-white text-calm-mute';
             return `
-            <div class="workflow-subtask-row grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
+            <div class="workflow-subtask-row grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
               <div class="min-w-0 flex items-start gap-2">
                 <span class="workflow-subtask-rail shrink-0 mt-1"></span>
                 <div class="min-w-0 flex-1">
@@ -4160,9 +4283,10 @@
             </div>`;
           }).join('') : '';
           return `
-            <div class="workflow-task-row grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
+            <div class="workflow-task-row grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm" draggable="true" data-workflow-task-row="${escapeHtml(task.id)}" data-workflow-lane="${escapeHtml(task.lane)}">
               <div class="min-w-0">
                 <div class="flex items-center gap-2 min-w-0">
+                  <span class="workflow-drag-handle shrink-0 text-calm-mute" title="拖拽调整本区排序"><i class="fa-solid fa-grip-vertical"></i></span>
                   <div class="font-bold truncate ${task.status === 'done' ? 'line-through text-calm-mute' : ''}">${escapeHtml(task.title)}</div>
                   <button class="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full bg-sky-50 text-dopamine-sky border border-sky-100" title="新增子任务" data-workflow-add-subtask="${task.id}">
                     <i class="fa-solid fa-plus text-[11px]"></i>
@@ -4172,9 +4296,7 @@
               </div>
               <div class="truncate text-calm-mute">${escapeHtml(project?.title || '未关联项目')}</div>
               <span class="workflow-tag ${quadrant.color} justify-self-start">${escapeHtml(quadrant.label)}</span>
-              <select class="px-3 py-2 rounded-xl border border-calm-line bg-white text-sm" data-workflow-status="${task.id}">
-                ${TASK_STATUS_OPTIONS.map(opt => `<option value="${opt.value}" ${task.status === opt.value ? 'selected' : ''}>${escapeHtml(opt.label)}</option>`).join('')}
-              </select>
+              <span class="workflow-tag ${status.color} justify-self-start">${escapeHtml(status.label)}</span>
               <div>${dueUrgencyBadge(task.dueDate, date, task.status)}</div>
               <div class="text-calm-mute">${compactDateTime(task.startAt)}<div class="text-[11px] text-calm-mute">${escapeHtml(task.start || '--:--')} - ${escapeHtml(task.end || '24:00')}</div></div>
               <div>
@@ -4185,11 +4307,10 @@
                 <div class="text-[11px] text-calm-mute mt-1">${summary.total ? `${summary.done}/${summary.total} 个子任务` : '未拆解子任务'}</div>
               </div>
               <div>
-                <select class="w-full px-3 py-2 rounded-xl border border-calm-line bg-white text-sm" data-workflow-today-toggle="${task.id}" ${todayDisabled ? 'disabled' : ''}>
-                  <option value="" ${task.todayBucket ? '' : 'selected'}>否</option>
-                  <option value="should" ${task.todayBucket ? 'selected' : ''}>是</option>
+                <select class="w-full px-3 py-2 rounded-xl border border-calm-line bg-white text-sm" data-workflow-lane-select="${task.id}">
+                  ${WORKFLOW_LANES.map(opt => `<option value="${opt.value}" ${lane.value === opt.value ? 'selected' : ''}>${escapeHtml(opt.label)}</option>`).join('')}
                 </select>
-                <div class="text-[11px] text-calm-mute mt-1">${todayDisabled ? '当前状态不加入' : today.value ? escapeHtml(today.label) : '不进入今日执行'}</div>
+                <div class="text-[11px] text-calm-mute mt-1">${escapeHtml(lane.short)} · 手动分区</div>
               </div>
               <div class="flex gap-2 justify-end">
                 ${canRun ? `<button class="text-xs font-bold text-dopamine-pink" data-workflow-start="${task.id}">${isRunning ? '结束' : '开始'}</button>` : ''}
@@ -4199,19 +4320,19 @@
             </div>${subtaskRowsHtml}`;
         }).join('');
       }
-      const taskGroups = TASK_STATUS_OPTIONS.map(status => ({
-        ...status,
-        items: filteredTasks.filter(task => task.status === status.value)
+      const taskGroups = WORKFLOW_LANES.map(lane => ({
+        ...lane,
+        items: filteredTasks.filter(task => task.lane === lane.value)
       }));
       $('workflowTaskTable').innerHTML = taskGroups.map(group => `
-        <details class="border-t border-calm-line first:border-t-0" open>
-          <summary class="cursor-pointer select-none px-4 py-3 bg-calm-bg font-black flex items-center justify-between gap-3">
-            <span class="flex items-center gap-2"><span class="workflow-tag ${group.color}">${escapeHtml(group.label)}</span><span>任务</span></span>
+        <details class="workflow-lane-shell ${group.shell} border-t border-calm-line first:border-t-0" ${group.collapsed ? '' : 'open'} data-workflow-lane-shell="${group.value}">
+          <summary class="cursor-pointer select-none px-4 py-3 bg-white/70 font-black flex items-center justify-between gap-3">
+            <span class="flex items-center gap-2"><span class="workflow-tag ${group.color}"><i class="fa-solid ${group.icon}"></i>${escapeHtml(group.label)}</span><span class="text-xs text-calm-mute font-semibold">${escapeHtml(group.desc)}</span></span>
             <span class="pill bg-white border border-calm-line text-calm-mute">${group.items.length} 项</span>
           </summary>
           <div class="overflow-auto scroll-thin">
             <div class="min-w-[1440px]">
-              <div class="grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 text-xs font-black tracking-wide text-calm-mute bg-white">
+              <div class="grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 text-xs font-black tracking-wide text-calm-mute bg-white">
                 <div>任务名称</div>
                 <div>所属项目</div>
                 <div>紧急程度（4 象限）</div>
@@ -4219,7 +4340,7 @@
                 <div>到期时间</div>
                 <div>开始时间</div>
                 <div>完成度</div>
-                <div>加入今日执行</div>
+                <div>所在分区</div>
                 <div class="text-right">操作</div>
               </div>
               ${renderTaskRows(group.items)}
@@ -4248,20 +4369,23 @@
       $('workflowTaskTable').querySelectorAll('[data-workflow-subtask-focus]').forEach(btn => btn.onclick = () => toggleSubtaskFocus(btn.dataset.workflowSubtaskFocus, btn.dataset.subtaskId));
       $('workflowTaskTable').querySelectorAll('[data-workflow-subtask-edit]').forEach(btn => btn.onclick = () => openSubtaskEditor(btn.dataset.workflowSubtaskEdit, btn.dataset.subtaskId));
       $('workflowTaskTable').querySelectorAll('[data-workflow-subtask-delete]').forEach(btn => btn.onclick = () => deleteSubtaskFromTask(btn.dataset.workflowSubtaskDelete, btn.dataset.subtaskId));
-      $('workflowTaskTable').querySelectorAll('[data-workflow-today-toggle]').forEach(select => select.onchange = () => {
-        setTaskTodayBucket(select.dataset.workflowTodayToggle, select.value ? 'should' : '');
+      $('workflowTaskTable').querySelectorAll('[data-workflow-lane-select]').forEach(select => select.onchange = () => {
+        setTaskLane(select.dataset.workflowLaneSelect, select.value);
       });
-      $('workflowTaskTable').querySelectorAll('[data-workflow-status]').forEach(select => select.onchange = () => {
-        const task = state.tasks.find(item => item.id === select.dataset.workflowStatus);
-        if (!task) return;
-        const nextStatus = taskStatusMeta(select.value).value;
-        if (nextStatus === 'done') return finishTask(task.id);
-        const nextBucket = nextStatus === 'memo' ? 'memo' : nextStatus === 'overdue' ? 'overdue' : task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue' ? 'next' : task.gtdBucket;
-        updateTaskField(task.id, {
-          status: nextStatus,
-          gtdBucket: nextBucket,
-          todayBucket: nextStatus === 'memo' || nextStatus === 'overdue' ? '' : task.todayBucket,
-          doneAt: ''
+      $('workflowTaskTable').querySelectorAll('[data-workflow-task-row]').forEach(row => {
+        row.addEventListener('dragstart', event => {
+          event.dataTransfer?.setData('text/plain', row.dataset.workflowTaskRow || '');
+          row.classList.add('dragging');
+        });
+        row.addEventListener('dragend', () => row.classList.remove('dragging'));
+        row.addEventListener('dragover', event => {
+          event.preventDefault();
+        });
+        row.addEventListener('drop', event => {
+          const taskId = event.dataTransfer?.getData('text/plain');
+          if (!taskId) return;
+          event.preventDefault();
+          reorderTaskWithinLane(taskId, row.dataset.workflowTaskRow);
         });
       });
     }
@@ -5544,6 +5668,7 @@
         fields:[
           { name:'title', label:'任务名称', value:task.title },
           { name:'projectId', label:'所属项目', type:'select', value:task.projectId || '', options:[{ value:'', label:'未关联项目' }, ...state.projects.map(project => ({ value:project.id, label:project.title }))] },
+          { name:'lane', label:'任务分区', type:'select', value:task.lane || 'future', options:WORKFLOW_LANES.map(item => ({ value:item.value, label:item.label })) },
           { name:'quadrant', label:'紧急程度（4 象限）', type:'select', value:task.quadrant || 'q2', options:QUADRANT_OPTIONS.map(item => ({ value:item.value, label:item.label })) },
           { name:'status', label:'状态', type:'select', value:task.status, options:TASK_STATUS_OPTIONS.map(item => ({ value:item.value, label:item.label })) },
           { name:'joinToday', label:'加入今日执行', type:'select', value:task.todayBucket ? 'yes' : 'no', options:[{ value:'no', label:'否' }, { value:'yes', label:'是' }] },
@@ -5561,6 +5686,9 @@
           const wasRunning = taskIsRunning(task);
           task.title = vals.title.trim() || task.title;
           task.projectId = vals.projectId || '';
+          const previousLane = task.lane;
+          task.lane = taskLaneMeta(vals.lane || task.lane || 'future').value;
+          if (task.lane !== previousLane) task.laneOrder = nextLaneOrder(task.lane);
           task.quadrant = taskQuadrantMeta(vals.quadrant).value;
           task.dueDate = vals.dueDate || '';
           task.start = parseHM(vals.start) || task.start || nowTime();
@@ -5573,6 +5701,10 @@
             overdue: vals.notificationOverdue !== 'no'
           }, 'default');
           const nextStatus = taskStatusMeta(vals.status).value;
+          if (task.lane === 'done' && nextStatus !== 'done' && !wasDone) {
+            finishTask(task.id);
+            return;
+          }
           if (nextStatus === 'done' && !wasDone) {
             finishTask(task.id);
             return;
@@ -5582,6 +5714,12 @@
             renderAll();
             return;
           }
+          if (nextStatus === 'overdue' && !taskDeadlineIsPast(task)) {
+            alert('只有设置了已过期截止日期的未开始任务才会进入逾期。');
+            renderAll();
+            return;
+          }
+          if (nextStatus === 'memo') task.lane = 'memo';
           if (wasRunning && nextStatus !== 'active') {
             finishActiveFocusRunForTask(task);
             promoteNextActiveTaskFocus();
@@ -5593,9 +5731,11 @@
             task.doneAt = task.doneAt || nowDateTime();
           } else {
             task.gtdBucket = nextStatus === 'memo' ? 'memo' : nextStatus === 'overdue' ? 'overdue' : (task.projectId ? 'next' : 'inbox');
-            task.todayBucket = nextStatus === 'memo' || nextStatus === 'overdue' ? '' : (vals.joinToday === 'yes' ? (task.todayBucket || 'should') : '');
+            if (vals.joinToday === 'yes') task.lane = 'today';
+            task.todayBucket = nextStatus === 'memo' || nextStatus === 'overdue' ? '' : (task.lane === 'today' ? (task.todayBucket || 'should') : '');
             task.doneAt = '';
           }
+          syncTaskLaneSideEffects(task);
           saveState(); renderAll();
           if (wasRunning && nextStatus !== 'active') {
             if (hasRunningFocus()) startFocusTicker(); else stopFocusTicker();
