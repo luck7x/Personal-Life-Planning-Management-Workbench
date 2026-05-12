@@ -240,6 +240,12 @@
     .workflow-project-item.active { border-color: rgba(155,93,229,.4); background: linear-gradient(135deg, rgba(155,93,229,.07), rgba(77,157,224,.05)); box-shadow: 0 16px 34px -24px rgba(155,93,229,.38); }
     .workflow-table-section-title { font-size: .78rem; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
     .workflow-table-wrap { border: 1px solid #ECEEF5; border-radius: 1.25rem; overflow: hidden; background: #fff; }
+    .workflow-task-row { transition: background .16s ease; }
+    .workflow-task-row:hover { background: rgba(247,248,252,.7); }
+    .workflow-subtask-row { background: linear-gradient(90deg, rgba(77,157,224,.07), rgba(255,255,255,.92)); }
+    .workflow-subtask-row:hover { background: linear-gradient(90deg, rgba(77,157,224,.12), rgba(255,255,255,.96)); }
+    .workflow-subtask-title { overflow-wrap: anywhere; line-height: 1.35; }
+    .workflow-subtask-rail { width: 1.65rem; align-self: stretch; border-left: 2px solid rgba(77,157,224,.28); border-bottom: 2px solid rgba(77,157,224,.18); border-bottom-left-radius: .8rem; }
     .workflow-board-col { border-radius: 1.2rem; background: linear-gradient(180deg, rgba(255,255,255,.98), rgba(248,250,255,.94)); border: 1px solid #ECEEF5; overflow: hidden; box-shadow: 0 12px 34px -24px rgba(0,0,0,.18); }
     .workflow-board-head { padding: .9rem 1rem; border-bottom: 1px solid #ECEEF5; }
     .workflow-board-body { padding: 1rem; max-height: 640px; overflow: auto; }
@@ -1280,12 +1286,35 @@
     let statsMode = 'day'; // 'day' | 'week' | 'month'
     let scheduleViewMode = 'day'; // 'day' | 'week'
     let weekAnchorDate = todayStr();
+    let lastKnownToday = todayStr();
+    let scheduleFollowsToday = true;
 
     function uid(prefix='id') { return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2,8)}`; }
     function pad(n) { return String(n).padStart(2,'0'); }
     function todayStr(offset=0) { const d = new Date(); d.setDate(d.getDate()+offset); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
     function nowTime() { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
     function nowDateTime() { const d = new Date(); return `${todayStr()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; }
+    function setScheduleDateSelection(dateValue='', followToday=null) {
+      const nextDate = dateValue || todayStr();
+      const scheduleEl = $('scheduleDate');
+      if (scheduleEl) scheduleEl.value = nextDate;
+      weekAnchorDate = nextDate;
+      scheduleFollowsToday = followToday === null ? nextDate === todayStr() : !!followToday;
+      return nextDate;
+    }
+    function syncScheduleTodayRollover() {
+      const currentToday = todayStr();
+      if (currentToday === lastKnownToday) return;
+      const previousToday = lastKnownToday;
+      lastKnownToday = currentToday;
+      const scheduleEl = $('scheduleDate');
+      if (!scheduleFollowsToday) {
+        updateClock();
+        return;
+      }
+      setScheduleDateSelection(currentToday, true);
+      renderAll();
+    }
     function parseYMD(dateStr) {
       const m = String(dateStr || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
       if (!m) return null;
@@ -3666,8 +3695,7 @@
       renderWeekTimeline();
     }
     function moveWeek(offset=0) {
-      weekAnchorDate = shiftDate(startOfWeek(weekAnchorDate || $('scheduleDate')?.value || todayStr()), offset * 7);
-      $('scheduleDate').value = weekAnchorDate;
+      setScheduleDateSelection(shiftDate(startOfWeek(weekAnchorDate || $('scheduleDate')?.value || todayStr()), offset * 7));
       renderAll();
     }
     function renderWeekTimeline() {
@@ -3757,8 +3785,7 @@
       </div>`;
       container.querySelectorAll('[data-week-date]').forEach(el => {
         el.onclick = () => {
-          $('scheduleDate').value = el.dataset.weekDate;
-          weekAnchorDate = el.dataset.weekDate;
+          setScheduleDateSelection(el.dataset.weekDate);
           renderAll();
         };
       });
@@ -4095,33 +4122,45 @@
           const canRun = !['done','memo'].includes(task.status);
           const isRunning = taskIsRunning(task);
           const todayDisabled = ['done','memo','overdue'].includes(task.status);
-          const subtasksHtml = Array.isArray(task.subtasks) && task.subtasks.length ? `
-                <div class="mt-2 space-y-1">
-                  ${task.subtasks.map(subtask => {
-                    const totalMinutes = subtaskFocusMinutes(task.id, subtask.id);
-                    const todayMinutes = subtaskFocusMinutes(task.id, subtask.id, todayStr());
-                    const isRunning = subtaskIsRunning(subtask);
-                    const canFocusSubtask = canRun && !subtask.done;
-                    return `
-                    <div class="rounded-xl border border-calm-line/70 bg-white/75 px-2 py-1.5">
-                      <div class="flex items-center gap-2 text-xs text-calm-mute">
-                        <input type="checkbox" class="rounded border-calm-line" data-workflow-subtask="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}" ${subtask.done ? 'checked' : ''}>
-                        <span class="min-w-0 flex-1 truncate ${subtask.done ? 'line-through' : ''}">${escapeHtml(subtask.title)}</span>
-                        ${canFocusSubtask ? `<button class="shrink-0 text-[11px] font-bold ${isRunning ? 'text-dopamine-sky' : 'text-dopamine-pink'} hover:text-pink-600" title="子任务专注" data-workflow-subtask-focus="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">${isRunning ? '结束' : '专注'}</button>` : ''}
-                        <button class="shrink-0 text-[11px] font-bold text-dopamine-orange hover:text-orange-600" title="修改子任务" data-workflow-subtask-edit="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">修改</button>
-                        <button class="shrink-0 text-[11px] font-bold text-rose-400 hover:text-rose-600" title="删除子任务" data-workflow-subtask-delete="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">删除</button>
-                      </div>
-                      <div class="pl-6 mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-calm-mute">
-                        <span><i class="fa-regular fa-calendar-plus mr-1"></i>${subtask.startAt ? escapeHtml(subtask.startAt) : '未设开始'}</span>
-                        <span><i class="fa-regular fa-calendar-check mr-1"></i>${subtask.dueDate ? escapeHtml(subtask.dueDate) : '未设到期'}</span>
-                        <span><i class="fa-regular fa-bell mr-1"></i>${escapeHtml(notificationOverrideLabel(subtask.notification, 'inherit'))}</span>
-                        <span><i class="fa-regular fa-hourglass-half mr-1"></i>累计 ${formatMinutes(totalMinutes)}${todayMinutes ? ` · 今日 ${formatMinutes(todayMinutes)}` : ''}</span>
-                      </div>
-                    </div>
-                  `;}).join('')}
-                </div>` : '';
+          const subtaskRowsHtml = Array.isArray(task.subtasks) && task.subtasks.length ? task.subtasks.map(subtask => {
+            const totalMinutes = subtaskFocusMinutes(task.id, subtask.id);
+            const todayMinutes = subtaskFocusMinutes(task.id, subtask.id, todayStr());
+            const isSubtaskRunning = subtaskIsRunning(subtask);
+            const canFocusSubtask = canRun && !subtask.done;
+            const subtaskStatusLabel = subtask.done ? '已完成' : isSubtaskRunning ? '专注中' : '未完成';
+            const subtaskStatusClass = subtask.done ? 'bg-green-50 text-dopamine-mint' : isSubtaskRunning ? 'bg-sky-50 text-dopamine-sky' : 'bg-white text-calm-mute';
+            return `
+            <div class="workflow-subtask-row grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
+              <div class="min-w-0 flex items-start gap-2">
+                <span class="workflow-subtask-rail shrink-0 mt-1"></span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-start gap-2 min-w-0">
+                    <input type="checkbox" class="mt-1 rounded border-calm-line shrink-0" data-workflow-subtask="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}" ${subtask.done ? 'checked' : ''}>
+                    <div class="workflow-subtask-title min-w-0 flex-1 font-bold ${subtask.done ? 'line-through text-calm-mute' : 'text-calm-ink'}">${escapeHtml(subtask.title)}</div>
+                    <span class="workflow-tag bg-sky-50 text-dopamine-sky shrink-0">子任务</span>
+                  </div>
+                  <div class="ml-6 mt-1 text-xs text-calm-mute">父任务：${escapeHtml(task.title)}</div>
+                </div>
+              </div>
+              <div class="truncate text-calm-mute">${escapeHtml(project?.title || '未关联项目')}</div>
+              <span class="workflow-tag bg-white text-calm-mute border border-calm-line justify-self-start">${escapeHtml(quadrant.label)}</span>
+              <span class="workflow-tag ${subtaskStatusClass} border border-calm-line justify-self-start">${subtaskStatusLabel}</span>
+              <div>${dueUrgencyBadge(subtask.dueDate || task.dueDate, date, subtask.done ? 'done' : task.status, true)}</div>
+              <div class="text-calm-mute">${subtask.startAt ? compactDateTime(subtask.startAt) : '—'}<div class="text-[11px] text-calm-mute">${subtask.dueDate ? `到 ${escapeHtml(subtask.dueDate)}` : '未设到期'}</div></div>
+              <div class="text-calm-mute">
+                <div class="font-black text-calm-ink">累计 ${formatMinutes(totalMinutes)}</div>
+                <div class="text-[11px]">${todayMinutes ? `今日 ${formatMinutes(todayMinutes)}` : '今日未专注'}</div>
+              </div>
+              <div class="text-xs text-calm-mute">${escapeHtml(notificationOverrideLabel(subtask.notification, 'inherit'))}</div>
+              <div class="min-w-0 flex flex-wrap gap-x-1.5 gap-y-1 justify-end pr-1">
+                ${canFocusSubtask ? `<button class="shrink-0 text-xs font-bold ${isSubtaskRunning ? 'text-dopamine-sky' : 'text-dopamine-pink'}" title="子任务专注" data-workflow-subtask-focus="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">${isSubtaskRunning ? '结束' : '专注'}</button>` : ''}
+                <button class="shrink-0 text-xs font-bold text-dopamine-orange" title="修改子任务" data-workflow-subtask-edit="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">修改</button>
+                <button class="shrink-0 text-xs font-bold text-rose-400" title="删除子任务" data-workflow-subtask-delete="${escapeHtml(task.id)}" data-subtask-id="${escapeHtml(subtask.id)}">删除</button>
+              </div>
+            </div>`;
+          }).join('') : '';
           return `
-            <div class="grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm hover:bg-calm-bg/70">
+            <div class="workflow-task-row grid grid-cols-[minmax(220px,1.3fr)_minmax(160px,1fr)_150px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
               <div class="min-w-0">
                 <div class="flex items-center gap-2 min-w-0">
                   <div class="font-bold truncate ${task.status === 'done' ? 'line-through text-calm-mute' : ''}">${escapeHtml(task.title)}</div>
@@ -4130,7 +4169,6 @@
                   </button>
                 </div>
                 <div class="text-xs text-calm-mute mt-1">${task.estimate ? `预计 ${task.estimate} 分钟` : '未设置预计时长'} · 子任务 ${summary.done}/${summary.total}</div>
-                ${subtasksHtml}
               </div>
               <div class="truncate text-calm-mute">${escapeHtml(project?.title || '未关联项目')}</div>
               <span class="workflow-tag ${quadrant.color} justify-self-start">${escapeHtml(quadrant.label)}</span>
@@ -4158,7 +4196,7 @@
                 ${canRun ? `<button class="text-xs font-bold text-green-600" data-workflow-done="${task.id}">完成</button>` : ''}
                 <button class="text-xs font-bold text-dopamine-orange" data-workflow-edit="${task.id}">修改</button>
               </div>
-            </div>`;
+            </div>${subtaskRowsHtml}`;
         }).join('');
       }
       const taskGroups = TASK_STATUS_OPTIONS.map(status => ({
@@ -5580,7 +5618,7 @@
     }
     function openBlockEditor(id,date) {
       const blocks = getDayTimeBlocks(date); const item = blocks.find(v => v.id===id); if (!item) return;
-      openEditDialog({ title:'修改日程安排', desc:date, fields:[{name:'date',label:'日期',type:'date',value:date},{name:'title',label:'标题',value:item.title},{name:'start',label:'开始时间',type:'time',value:item.start},{name:'end',label:'结束时间',type:'time',value:item.end}], onSave:(vals)=>{ const targetDate = vals.date || date; item.title = vals.title.trim() || item.title; item.start = parseHM(vals.start)||item.start; item.end = parseHM(vals.end)||item.end; if (targetDate !== date) { state.timeBlocks[date] = blocks.filter(v => v.id!==id); getDayTimeBlocks(targetDate).push(item); } saveState(); $('scheduleDate').value = targetDate; renderAll(); }, onDelete:()=>{ state.timeBlocks[date] = blocks.filter(v => v.id!==id); saveState(); renderAll(); } });
+      openEditDialog({ title:'修改日程安排', desc:date, fields:[{name:'date',label:'日期',type:'date',value:date},{name:'title',label:'标题',value:item.title},{name:'start',label:'开始时间',type:'time',value:item.start},{name:'end',label:'结束时间',type:'time',value:item.end}], onSave:(vals)=>{ const targetDate = vals.date || date; item.title = vals.title.trim() || item.title; item.start = parseHM(vals.start)||item.start; item.end = parseHM(vals.end)||item.end; if (targetDate !== date) { state.timeBlocks[date] = blocks.filter(v => v.id!==id); getDayTimeBlocks(targetDate).push(item); } saveState(); setScheduleDateSelection(targetDate); renderAll(); }, onDelete:()=>{ state.timeBlocks[date] = blocks.filter(v => v.id!==id); saveState(); renderAll(); } });
     }
     function openSingleHabitEditor(id) {
       const date = $('habitDate').value || todayStr();
@@ -5856,7 +5894,7 @@
       $('workflowTaskFilter').onchange = renderWorkflow;
       if ($('workflowProjectFilterSelect')) $('workflowProjectFilterSelect').onchange = () => { workflowSelectedProjectId = $('workflowProjectFilterSelect').value || ''; renderWorkflow(); };
       const jumpWorkflowToSchedule = () => {
-        $('scheduleDate').value = $('workflowDate').value || todayStr();
+        setScheduleDateSelection($('workflowDate').value || todayStr());
         navTo('home-section');
         renderAll();
       };
@@ -5872,14 +5910,13 @@
       $('restDialog').addEventListener('cancel', event => event.preventDefault());
       $('manualFocusDate').value = todayStr();
       $('btnAddManualFocus').onclick = addManualFocus;
-      $('scheduleDate').value = todayStr();
-      weekAnchorDate = todayStr();
-      $('scheduleDate').onchange = () => { weekAnchorDate = $('scheduleDate').value || todayStr(); renderAll(); };
-      $('btnScheduleToday').onclick = () => { $('scheduleDate').value = todayStr(); weekAnchorDate = todayStr(); renderAll(); };
+      setScheduleDateSelection(todayStr(), true);
+      $('scheduleDate').onchange = () => { setScheduleDateSelection($('scheduleDate').value || todayStr()); renderAll(); };
+      $('btnScheduleToday').onclick = () => { setScheduleDateSelection(todayStr(), true); renderAll(); };
       if ($('btnScheduleDayView')) $('btnScheduleDayView').onclick = () => setScheduleViewMode('day');
       if ($('btnScheduleWeekView')) $('btnScheduleWeekView').onclick = () => navTo('week-section');
       if ($('btnWeekPrev')) $('btnWeekPrev').onclick = () => moveWeek(-1);
-      if ($('btnWeekToday')) $('btnWeekToday').onclick = () => { $('scheduleDate').value = todayStr(); weekAnchorDate = todayStr(); renderAll(); };
+      if ($('btnWeekToday')) $('btnWeekToday').onclick = () => { setScheduleDateSelection(todayStr(), true); renderAll(); };
       if ($('btnWeekNext')) $('btnWeekNext').onclick = () => moveWeek(1);
       if ($('btnWeekGoSchedule')) $('btnWeekGoSchedule').onclick = () => navTo('home-section');
       $('scheduleTaskSelect').onchange = () => {
@@ -5990,7 +6027,7 @@
     syncBackendSyncControls();
     renderAll();
     updateClock();
-    setInterval(updateClock, 1000);
+    setInterval(() => { updateClock(); syncScheduleTodayRollover(); }, 1000);
     if (hasRunningFocus()) startFocusTicker();
     if (hasActiveRest()) {
       openRestDialog();
