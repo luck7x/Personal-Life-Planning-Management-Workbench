@@ -246,7 +246,9 @@
     .workflow-subtask-row:hover { background: linear-gradient(90deg, rgba(77,157,224,.12), rgba(255,255,255,.96)); }
     .workflow-subtask-title { overflow-wrap: anywhere; line-height: 1.35; }
     .workflow-subtask-rail { width: 1.65rem; align-self: stretch; border-left: 2px solid rgba(77,157,224,.28); border-bottom: 2px solid rgba(77,157,224,.18); border-bottom-left-radius: .8rem; }
-    .workflow-lane-shell { border-radius: 1.15rem; border-width: 1px; overflow: hidden; }
+    .workflow-lane-shell { position: relative; border-radius: 1.15rem; border-width: 1px; overflow: hidden; }
+    .workflow-lane-shell::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: var(--lane-accent, rgba(77,157,224,.45)); z-index: 2; }
+    .workflow-lane-summary { background: linear-gradient(90deg, var(--lane-head, rgba(255,255,255,.86)), rgba(255,255,255,.72)); }
     .workflow-drag-handle { cursor: grab; touch-action: none; }
     .workflow-drag-handle:active { cursor: grabbing; }
     .workflow-task-row.dragging { opacity: .55; background: rgba(77,157,224,.1); }
@@ -559,10 +561,11 @@
             <div class="flex flex-wrap gap-2 items-center">
               <select id="workflowTaskFilter" class="px-3 py-2 rounded-2xl border border-calm-line bg-white">
                 <option value="all">显示全部</option>
+                <option value="memo">备忘</option>
                 <option value="today">今日执行</option>
                 <option value="future">未来待办</option>
-                <option value="memo">备忘</option>
                 <option value="idea">想法池</option>
+                <option value="overdue">逾期</option>
                 <option value="done">已完成</option>
                 <option value="q1">重要且紧急</option>
                 <option value="q2">重要不紧急</option>
@@ -581,9 +584,9 @@
                 <option value="">选择所属项目</option>
               </select>
               <select id="workflowCaptureLane" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
+                <option value="memo">备忘</option>
                 <option value="today">今日执行</option>
                 <option value="future" selected>未来待办</option>
-                <option value="memo">备忘</option>
                 <option value="idea">想法池</option>
               </select>
               <select id="workflowCaptureQuadrant" class="px-3 py-3 rounded-2xl border border-calm-line bg-white">
@@ -1243,11 +1246,12 @@
       { value:'done', label:'完成', color:'bg-emerald-100 text-emerald-700' }
     ];
     const WORKFLOW_LANES = [
-      { value:'today', label:'今日执行', short:'今天', icon:'fa-bolt', color:'bg-rose-100 text-rose-700', shell:'border-rose-100 bg-rose-50/35', desc:'每天必看，只放今天真的要动手的事。' },
-      { value:'future', label:'未来待办', short:'未来', icon:'fa-calendar-check', color:'bg-orange-100 text-orange-700', shell:'border-orange-100 bg-orange-50/30', desc:'有计划日或截止日，但今天不一定做。' },
-      { value:'memo', label:'备忘', short:'提醒', icon:'fa-bell', color:'bg-purple-100 text-purple-700', shell:'border-purple-100 bg-purple-50/30', desc:'轻量提醒，不强行项目化，不进入专注压力。' },
-      { value:'idea', label:'想法池', short:'想法', icon:'fa-lightbulb', color:'bg-sky-100 text-sky-700', shell:'border-sky-100 bg-sky-50/30', desc:'无期限好想法，先收着，后面再升级。' },
-      { value:'done', label:'已完成', short:'完成', icon:'fa-circle-check', color:'bg-emerald-100 text-emerald-700', shell:'border-emerald-100 bg-emerald-50/25', desc:'默认折叠，用来扫今日和本周成果。', collapsed:true }
+      { value:'memo', label:'备忘', short:'提醒', icon:'fa-bell', color:'bg-purple-100 text-purple-700', shell:'border-purple-200 bg-purple-50/40', accent:'#A855F7', head:'rgba(243,232,255,.9)', desc:'轻量提醒，不强行项目化，不进入专注压力。' },
+      { value:'today', label:'今日执行', short:'今天', icon:'fa-bolt', color:'bg-blue-100 text-blue-700', shell:'border-blue-200 bg-blue-50/45', accent:'#2563EB', head:'rgba(219,234,254,.92)', desc:'每天必看，只放今天真的要动手的事。' },
+      { value:'future', label:'未来待办', short:'未来', icon:'fa-calendar-check', color:'bg-orange-100 text-orange-700', shell:'border-orange-200 bg-orange-50/40', accent:'#F97316', head:'rgba(255,237,213,.9)', desc:'有计划日或截止日，但今天不一定做。' },
+      { value:'idea', label:'想法池', short:'想法', icon:'fa-lightbulb', color:'bg-amber-100 text-amber-800', shell:'border-amber-200 bg-amber-50/40', accent:'#D97706', head:'rgba(254,243,199,.9)', desc:'无期限好想法，先收着，后面再升级。' },
+      { value:'overdue', label:'逾期', short:'逾期', icon:'fa-triangle-exclamation', color:'bg-red-100 text-red-700', shell:'border-red-200 bg-red-50/55', accent:'#DC2626', head:'rgba(254,226,226,.96)', desc:'已经超过截止日，需要尽快处理或重新安排。' },
+      { value:'done', label:'已完成', short:'完成', icon:'fa-circle-check', color:'bg-emerald-100 text-emerald-700', shell:'border-emerald-200 bg-emerald-50/35', accent:'#10B981', head:'rgba(209,250,229,.9)', desc:'默认折叠，用来扫今日和本周成果。', collapsed:true }
     ];
     const PROJECT_AREAS = [
       { value:'research', label:'科研 / 实验' },
@@ -1642,13 +1646,14 @@
       return TASK_STATUS_OPTIONS.find(item => item.value === status) || TASK_STATUS_OPTIONS[1];
     }
     function taskLaneMeta(lane) {
-      return WORKFLOW_LANES.find(item => item.value === lane) || WORKFLOW_LANES[1];
+      return WORKFLOW_LANES.find(item => item.value === lane) || WORKFLOW_LANES.find(item => item.value === 'future') || WORKFLOW_LANES[0];
     }
     function taskCreatedTimeValue(item={}) {
       const parsed = Date.parse(String(item.createdAt || '').replace(' ', 'T'));
       return Number.isFinite(parsed) ? parsed : Date.now();
     }
     function inferTaskLane(item={}) {
+      if (item.status === 'overdue' || item.gtdBucket === 'overdue') return 'overdue';
       if (WORKFLOW_LANES.some(lane => lane.value === item.lane)) return item.lane;
       if (item.status === 'done' || item.gtdBucket === 'done') return 'done';
       if (item.status === 'memo' || item.gtdBucket === 'memo') return 'memo';
@@ -1675,6 +1680,11 @@
         task.status = 'memo';
         task.gtdBucket = 'memo';
         task.todayBucket = '';
+      } else if (lane === 'overdue') {
+        task.status = 'overdue';
+        task.gtdBucket = 'overdue';
+        task.todayBucket = '';
+        task.doneAt = '';
       } else if (lane === 'idea') {
         if (['done','memo','overdue','active'].includes(task.status)) task.status = 'planned';
         task.gtdBucket = 'someday';
@@ -2765,13 +2775,19 @@
         if ((!deadline || !taskDeadlineIsPast(task, baseDate)) && task.status === 'overdue') {
           task.status = 'todo';
           task.gtdBucket = task.projectId ? 'next' : 'inbox';
+          if (task.lane === 'overdue') {
+            task.lane = 'future';
+            task.laneOrder = nextLaneOrder('future');
+          }
           changed = true;
           return;
         }
         if (deadline && diffDays(deadline, baseDate) > 0) {
-          if (task.status !== 'overdue' || task.gtdBucket !== 'overdue' || task.todayBucket) changed = true;
+          if (task.status !== 'overdue' || task.gtdBucket !== 'overdue' || task.todayBucket || task.lane !== 'overdue') changed = true;
           task.status = 'overdue';
           task.gtdBucket = 'overdue';
+          task.lane = 'overdue';
+          task.laneOrder = task.laneOrder || nextLaneOrder('overdue');
           task.todayBucket = '';
         }
       });
@@ -2990,6 +3006,18 @@
       if (!task) return;
       const lane = taskLaneMeta(laneValue).value;
       if (lane === 'done' && task.status !== 'done') return finishTask(id);
+      if (lane === 'overdue') {
+        if (taskHasStartTrace(task)) {
+          alert('已开始过的任务不会进入逾期，请结束或完成后再归档。');
+          renderAll();
+          return;
+        }
+        if (!taskDeadlineIsPast(task)) {
+          alert('只有设置了已过期截止日期的未开始任务才会进入逾期。');
+          renderAll();
+          return;
+        }
+      }
       if (lane === task.lane) return;
       if (taskIsRunning(task) && lane !== 'today') finishActiveFocusRunForTask(task);
       task.lane = lane;
@@ -4063,8 +4091,9 @@
       $('workflowStats').innerHTML = [
         { label:'项目总数', value: allProjects.length, color:'text-dopamine-purple', note:'长期目标池' },
         { label:'进行中项目', value: activeProjects, color:'text-dopamine-mint', note:'当前需要推进' },
-        { label:'今日执行', value: laneCounts.today || 0, color:'text-dopamine-pink', note:'每天第一眼先看这里' },
+        { label:'今日执行', value: laneCounts.today || 0, color:'text-blue-600', note:'每天第一眼先看这里' },
         { label:'未来待办', value: laneCounts.future || 0, color:'text-dopamine-orange', note:'有计划或截止，但不抢今天' },
+        { label:'逾期', value: laneCounts.overdue || overdueTasks.length, color:'text-rose-600', note:'需要尽快处理' },
         { label:'7 天内到期', value: dueSoonTasks.length, color:'text-dopamine-yellow', note:'只强化，不打乱排序' },
         { label:'未归项目', value: unlinkedTasks.length, color:'text-dopamine-orange', note:'需要归档清理' }
       ].map(item => `
@@ -4099,7 +4128,7 @@
           icon:'fa-list-check',
           color:'text-dopamine-sky',
           title:'任务层',
-          lines:[`今日执行 ${laneCounts.today || 0} 项`, `未来待办 ${laneCounts.future || 0} 项`, `备忘 ${laneCounts.memo || 0} 项`, `想法池 ${laneCounts.idea || 0} 项`]
+          lines:[`备忘 ${laneCounts.memo || 0} 项`, `今日执行 ${laneCounts.today || 0} 项`, `未来待办 ${laneCounts.future || 0} 项`, `想法池 ${laneCounts.idea || 0} 项`, `逾期 ${laneCounts.overdue || overdueTasks.length} 项`]
         }
       ].map(card => `
         <div class="rounded-2xl border bg-gradient-to-r ${card.tone} p-4">
@@ -4115,7 +4144,8 @@
         note: opt.label
       }));
       const todayStats = [
-        { label:'今日执行', value: laneCounts.today || 0, color:'bg-rose-100 text-rose-700', note:'可拖拽排序' },
+        { label:'今日执行', value: laneCounts.today || 0, color:'bg-blue-100 text-blue-700', note:'可拖拽排序' },
+        { label:'逾期', value: laneCounts.overdue || overdueTasks.length, color:'bg-red-100 text-red-700', note:'单独拉出' },
         { label:'已完成', value: laneCounts.done || doneTasks.length, color:'bg-emerald-100 text-emerald-700', note:'默认折叠' }
       ];
       $('workflowQuadrantSummary').innerHTML = [...quadrantStats, ...todayStats].map(item => `
@@ -4253,7 +4283,7 @@
             const subtaskStatusLabel = subtask.done ? '已完成' : isSubtaskRunning ? '专注中' : '未完成';
             const subtaskStatusClass = subtask.done ? 'bg-green-50 text-dopamine-mint' : isSubtaskRunning ? 'bg-sky-50 text-dopamine-sky' : 'bg-white text-calm-mute';
             return `
-            <div class="workflow-subtask-row grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm">
+            <div class="workflow-subtask-row grid grid-cols-[minmax(250px,1.5fr)_minmax(150px,1fr)_108px_92px_112px_132px_142px_132px_108px] gap-2 px-4 py-3 border-t border-calm-line items-center text-sm">
               <div class="min-w-0 flex items-start gap-2">
                 <span class="workflow-subtask-rail shrink-0 mt-1"></span>
                 <div class="min-w-0 flex-1">
@@ -4283,7 +4313,7 @@
             </div>`;
           }).join('') : '';
           return `
-            <div class="workflow-task-row grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 border-t border-calm-line items-center text-sm" draggable="true" data-workflow-task-row="${escapeHtml(task.id)}" data-workflow-lane="${escapeHtml(task.lane)}">
+            <div class="workflow-task-row grid grid-cols-[minmax(250px,1.5fr)_minmax(150px,1fr)_108px_92px_112px_132px_142px_132px_108px] gap-2 px-4 py-3 border-t border-calm-line items-center text-sm" draggable="true" data-workflow-task-row="${escapeHtml(task.id)}" data-workflow-lane="${escapeHtml(task.lane)}">
               <div class="min-w-0">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="workflow-drag-handle shrink-0 text-calm-mute" title="拖拽调整本区排序"><i class="fa-solid fa-grip-vertical"></i></span>
@@ -4325,17 +4355,17 @@
         items: filteredTasks.filter(task => task.lane === lane.value)
       }));
       $('workflowTaskTable').innerHTML = taskGroups.map(group => `
-        <details class="workflow-lane-shell ${group.shell} border-t border-calm-line first:border-t-0" ${group.collapsed ? '' : 'open'} data-workflow-lane-shell="${group.value}">
-          <summary class="cursor-pointer select-none px-4 py-3 bg-white/70 font-black flex items-center justify-between gap-3">
+        <details class="workflow-lane-shell ${group.shell} border-t border-calm-line first:border-t-0" style="--lane-accent:${group.accent};--lane-head:${group.head};" ${group.collapsed ? '' : 'open'} data-workflow-lane-shell="${group.value}">
+          <summary class="workflow-lane-summary cursor-pointer select-none px-4 py-3 font-black flex items-center justify-between gap-3">
             <span class="flex items-center gap-2"><span class="workflow-tag ${group.color}"><i class="fa-solid ${group.icon}"></i>${escapeHtml(group.label)}</span><span class="text-xs text-calm-mute font-semibold">${escapeHtml(group.desc)}</span></span>
             <span class="pill bg-white border border-calm-line text-calm-mute">${group.items.length} 项</span>
           </summary>
           <div class="overflow-auto scroll-thin">
-            <div class="min-w-[1440px]">
-              <div class="grid grid-cols-[minmax(250px,1.4fr)_minmax(160px,1fr)_140px_120px_120px_140px_150px_150px_120px] gap-3 px-4 py-3 text-xs font-black tracking-wide text-calm-mute bg-white">
+            <div class="min-w-[1320px]">
+              <div class="grid grid-cols-[minmax(250px,1.5fr)_minmax(150px,1fr)_108px_92px_112px_132px_142px_132px_108px] gap-2 px-4 py-3 text-xs font-black tracking-wide text-calm-mute bg-white">
                 <div>任务名称</div>
                 <div>所属项目</div>
-                <div>紧急程度（4 象限）</div>
+                <div>4 象限</div>
                 <div>状态</div>
                 <div>到期时间</div>
                 <div>开始时间</div>
@@ -5720,6 +5750,7 @@
             return;
           }
           if (nextStatus === 'memo') task.lane = 'memo';
+          if (nextStatus === 'overdue') task.lane = 'overdue';
           if (wasRunning && nextStatus !== 'active') {
             finishActiveFocusRunForTask(task);
             promoteNextActiveTaskFocus();
