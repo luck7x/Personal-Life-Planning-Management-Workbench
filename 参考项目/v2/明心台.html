@@ -1094,6 +1094,20 @@
                     <input id="notificationOverdueToggle" type="checkbox" class="accent-[#9B5DE5]"> 逾期提醒
                   </label>
                 </div>
+                <div class="rounded-2xl border border-calm-line bg-white px-3 py-3 space-y-2">
+                  <div class="text-sm font-black">专注预计时长保护</div>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <label class="block">
+                      <div class="text-xs font-bold text-calm-mute mb-1">结束前提醒分钟</div>
+                      <input id="focusLeadMinutesInput" type="number" min="0" max="1440" step="1" class="w-full px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
+                    </label>
+                    <label class="block">
+                      <div class="text-xs font-bold text-calm-mute mb-1">超时兜底分钟</div>
+                      <input id="focusGraceMinutesInput" type="number" min="1" max="1440" step="5" class="w-full px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
+                    </label>
+                  </div>
+                  <div class="text-xs text-calm-mute leading-5">到预计结束前会推送提醒；超过预计时长后继续计时，超过兜底时间会停止并要求确认真实结束时间。</div>
+                </div>
                 <div id="notificationStatus" class="rounded-2xl bg-gray-100 text-calm-mute px-3 py-2 text-xs font-semibold">尚未测试通知。</div>
                 <div class="grid grid-cols-1 gap-2">
                   <button id="btnNotificationSave" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-black">保存通知配置</button>
@@ -1300,6 +1314,8 @@
     let weekTimelineScale = 'standard';
     let selectedCareMood = 'steady';
     let editContext = null;
+    let pendingFocusDialogOpen = false;
+    let focusProtectionRenderQueued = false;
     let sidebarHidden = false;
     let statsMode = 'day'; // 'day' | 'week' | 'month'
     let scheduleViewMode = 'day'; // 'day' | 'week'
@@ -1376,6 +1392,24 @@
       const h = Math.floor(safe / 3600), m = Math.floor((safe % 3600) / 60), s = safe % 60;
       return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
     }
+    function formatClockFromMinutes(mins=0) {
+      const safe = Math.max(0, Math.round(Number(mins) || 0));
+      const h = Math.floor(safe / 60), m = safe % 60;
+      return h > 0 ? `${h}小时${m ? ` ${m}分钟` : ''}` : `${m}分钟`;
+    }
+    function hmFromTimestamp(ts=Date.now()) {
+      const d = new Date(Number(ts) || Date.now());
+      return `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+    function dateFromTimestamp(ts=Date.now()) {
+      const d = new Date(Number(ts) || Date.now());
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    }
+    function minutesBetweenTimestamps(startTs=Date.now(), endTs=Date.now()) {
+      const start = Number(startTs) || Date.now();
+      const end = Number(endTs) || Date.now();
+      return Math.max(1, Math.round((end - start) / 60000));
+    }
     function addMinutesToHM(start, mins) {
       const base = hmToMinutes(start);
       const total = (base + Math.max(0, Number(mins) || 0)) % (24 * 60);
@@ -1442,7 +1476,39 @@
         startedAtTs: Number(item.startedAtTs) || Date.now(),
         taskId: item.taskId || null,
         subtaskId: item.subtaskId || '',
-        parentTitle: String(item.parentTitle || '')
+        parentTitle: String(item.parentTitle || ''),
+        expectedMinutes: clampFocusMinutes(item.expectedMinutes, 0),
+        focusLeadNoticeSent: boolFromValue(item.focusLeadNoticeSent, false),
+        focusDueNoticeSent: boolFromValue(item.focusDueNoticeSent, false),
+        focusAutoClosed: boolFromValue(item.focusAutoClosed, false)
+      };
+    }
+    function normalizePendingFocusConfirmation(item) {
+      if (!item || typeof item !== 'object') return null;
+      const title = String(item.title || '').trim();
+      if (!title) return null;
+      const startedAtTs = Number(item.startedAtTs) || Date.now();
+      const autoClosedAtTs = Number(item.autoClosedAtTs) || Date.now();
+      const expectedMinutes = clampFocusMinutes(item.expectedMinutes, 0);
+      const expectedEndAtTs = Number(item.expectedEndAtTs) || (expectedMinutes ? startedAtTs + expectedMinutes * 60000 : 0);
+      return {
+        id: String(item.id || uid('pendingFocus')),
+        focusId: String(item.focusId || item.id || uid('focus')),
+        source: ['task','subtask','manual'].includes(item.source) ? item.source : 'manual',
+        title,
+        parentTitle: String(item.parentTitle || ''),
+        category: String(item.category || 'research'),
+        note: String(item.note || ''),
+        date: String(item.date || dateFromTimestamp(startedAtTs)),
+        start: parseHM(item.start) || hmFromTimestamp(startedAtTs),
+        startedAtTs,
+        expectedMinutes,
+        expectedEndAtTs,
+        expectedEnd: parseHM(item.expectedEnd) || (expectedMinutes ? addMinutesToHM(parseHM(item.start) || hmFromTimestamp(startedAtTs), expectedMinutes) : ''),
+        autoClosedAtTs,
+        autoEnd: parseHM(item.autoEnd) || hmFromTimestamp(autoClosedAtTs),
+        taskId: String(item.taskId || ''),
+        subtaskId: String(item.subtaskId || '')
       };
     }
     function normalizePausedFocusItem(item) {
@@ -1484,6 +1550,7 @@
         active: normalizeActiveFocusItem(source.active),
         activeItems,
         sessions: Array.isArray(source.sessions) ? source.sessions : [],
+        pendingConfirmations: Array.isArray(source.pendingConfirmations) ? source.pendingConfirmations.map(normalizePendingFocusConfirmation).filter(Boolean) : [],
         rest: { active: normalizeRestActive(restSource.active) }
       };
     }
@@ -1716,13 +1783,20 @@
       if (!Number.isFinite(num)) return fallback;
       return Math.max(0, Math.min(10080, Math.round(num)));
     }
+    function clampFocusMinutes(value, fallback=25) {
+      const num = Number(value);
+      if (!Number.isFinite(num)) return fallback;
+      return Math.max(0, Math.min(24 * 60, Math.round(num)));
+    }
     function normalizeNotificationSettings(settings={}) {
       const source = settings && typeof settings === 'object' ? settings : {};
       return {
         enabled: boolFromValue(source.enabled, true),
         leadMinutes: clampLeadMinutes(source.leadMinutes, 30),
         atDue: boolFromValue(source.atDue, true),
-        overdue: boolFromValue(source.overdue, true)
+        overdue: boolFromValue(source.overdue, true),
+        focusLeadMinutes: clampLeadMinutes(source.focusLeadMinutes, 5),
+        focusGraceMinutes: clampLeadMinutes(source.focusGraceMinutes, 60)
       };
     }
     function normalizeNotificationOverride(config={}, fallbackMode='default') {
@@ -1770,6 +1844,10 @@
         startedAt,
         activeStartedAtTs: done ? 0 : activeStartedAtTs,
         activeFocusId: done ? '' : activeFocusId,
+        expectedMinutes: done ? 0 : clampFocusMinutes(item.expectedMinutes, 0),
+        focusLeadNoticeSent: done ? false : boolFromValue(item.focusLeadNoticeSent, false),
+        focusDueNoticeSent: done ? false : boolFromValue(item.focusDueNoticeSent, false),
+        focusAutoClosed: done ? false : boolFromValue(item.focusAutoClosed, false),
         notification: normalizeNotificationOverride(item.notification, 'inherit'),
         doneAt: done ? String(item.doneAt || nowDateTime()) : ''
       };
@@ -1822,6 +1900,10 @@
         startedAt,
         activeStartedAtTs,
         activeFocusId,
+        expectedMinutes: status === 'active' ? clampFocusMinutes(item.expectedMinutes, 0) : 0,
+        focusLeadNoticeSent: status === 'active' ? boolFromValue(item.focusLeadNoticeSent, false) : false,
+        focusDueNoticeSent: status === 'active' ? boolFromValue(item.focusDueNoticeSent, false) : false,
+        focusAutoClosed: status === 'active' ? boolFromValue(item.focusAutoClosed, false) : false,
         doneAt: String(item.doneAt || '')
       };
       syncTaskLaneSideEffects(normalized);
@@ -2315,6 +2397,10 @@
         start: String(task.startedAt || nowDateTime()).slice(11, 16),
         startedAtTs: Number(task.activeStartedAtTs),
         taskId: task.id,
+        expectedMinutes: clampFocusMinutes(task.expectedMinutes, 0),
+        focusLeadNoticeSent: boolFromValue(task.focusLeadNoticeSent, false),
+        focusDueNoticeSent: boolFromValue(task.focusDueNoticeSent, false),
+        focusAutoClosed: boolFromValue(task.focusAutoClosed, false),
         source: 'task',
         color: blockColorForTask(task)
       };
@@ -2339,6 +2425,10 @@
         startedAtTs: Number(subtask.activeStartedAtTs) || Date.now(),
         taskId: task.id,
         subtaskId: subtask.id,
+        expectedMinutes: clampFocusMinutes(subtask.expectedMinutes, 0),
+        focusLeadNoticeSent: boolFromValue(subtask.focusLeadNoticeSent, false),
+        focusDueNoticeSent: boolFromValue(subtask.focusDueNoticeSent, false),
+        focusAutoClosed: boolFromValue(subtask.focusAutoClosed, false),
         source: 'subtask',
         color: blockColorForTask(task)
       };
@@ -2390,6 +2480,10 @@
           title: item.title || '未命名专注',
           startedAtTs: Number(item.startedAtTs) || Date.now(),
           source: 'manual',
+          expectedMinutes: clampFocusMinutes(item.expectedMinutes, 0),
+          focusLeadNoticeSent: boolFromValue(item.focusLeadNoticeSent, false),
+          focusDueNoticeSent: boolFromValue(item.focusDueNoticeSent, false),
+          focusAutoClosed: boolFromValue(item.focusAutoClosed, false),
           color: CATEGORY_COLORS[item.category] || CATEGORY_COLORS.other
         });
       });
@@ -2400,6 +2494,228 @@
     }
     function hasRunningFocus() {
       return runningFocusEntries().length > 0;
+    }
+    function focusPlanDefaultMinutes(source={}) {
+      const estimate = Number(source.estimate);
+      return Number.isFinite(estimate) && estimate > 0 ? Math.round(estimate) : 25;
+    }
+    function focusPlanFromValues(vals={}, defaultMinutes=25) {
+      const mode = String(vals.expectedMode || 'default');
+      if (mode === 'none') return { expectedMinutes:0 };
+      if (mode === 'custom') return { expectedMinutes:Math.max(1, clampFocusMinutes(vals.customMinutes, defaultMinutes)) };
+      if (mode === 'default') return { expectedMinutes:Math.max(1, clampFocusMinutes(defaultMinutes, 25)) };
+      return { expectedMinutes:Math.max(1, clampFocusMinutes(mode, defaultMinutes)) };
+    }
+    function focusPlanLabel(minutes=0) {
+      return Number(minutes) > 0 ? `预计 ${formatClockFromMinutes(minutes)}` : '不设置预计时长';
+    }
+    function openFocusStartDialog({ title='开始专注', desc='', defaultMinutes=25, onStart }) {
+      openEditDialog({
+        title,
+        desc,
+        saveLabel:'开始专注',
+        fields:[
+          { name:'expectedMode', label:'预计时长', type:'select', value:'default', options:[
+            { value:'default', label:`默认 ${focusPlanDefaultMinutes({ estimate:defaultMinutes })} 分钟` },
+            { value:'none', label:'不设置预计时长' },
+            { value:'25', label:'25 分钟' },
+            { value:'45', label:'45 分钟' },
+            { value:'60', label:'60 分钟' },
+            { value:'custom', label:'自定义' }
+          ] },
+          { name:'customMinutes', label:'自定义分钟', type:'number', value:String(defaultMinutes || 25) }
+        ],
+        onSave:(vals)=>{ if (typeof onStart === 'function') onStart(focusPlanFromValues(vals, defaultMinutes)); }
+      });
+    }
+    function decorateFocusSource(target, plan={}) {
+      const expectedMinutes = clampFocusMinutes(plan.expectedMinutes, 0);
+      target.expectedMinutes = expectedMinutes;
+      target.focusLeadNoticeSent = false;
+      target.focusDueNoticeSent = false;
+      target.focusAutoClosed = false;
+    }
+    async function sendFocusNotification(kind, entry) {
+      const settings = currentNotificationSettings();
+      if (!settings.enabled || !entry?.expectedMinutes) return;
+      const expectedEnd = addMinutesToHM(entry.start || nowTime(), entry.expectedMinutes);
+      const title = kind === 'lead' ? '专注即将结束' : kind === 'due' ? '专注预计时间已到' : '专注已自动暂停';
+      const content = kind === 'lead'
+        ? `${entry.title} 预计 ${expectedEnd} 结束，剩余约 ${settings.focusLeadMinutes} 分钟。`
+        : kind === 'due'
+          ? `${entry.title} 已到预计结束时间 ${expectedEnd}，如仍在专注可继续。`
+          : `${entry.title} 已超过预计时长 ${settings.focusGraceMinutes} 分钟，系统已暂停计时，请回到明心台确认真实结束时间。`;
+      try {
+        await backendFetch('/api/notifications/test', { method:'POST', body:JSON.stringify({ title, content }) });
+      } catch (err) {
+        console.warn('focus notification failed', err);
+      }
+    }
+    function focusSourceRef(entry) {
+      if (!entry) return null;
+      if (entry.source === 'task' && entry.taskId) return state.tasks.find(task => task.id === entry.taskId) || null;
+      if (entry.source === 'subtask' && entry.taskId && entry.subtaskId) {
+        return subtaskById(state.tasks.find(task => task.id === entry.taskId), entry.subtaskId);
+      }
+      if (entry.source === 'manual') return (Array.isArray(state.focus.activeItems) ? state.focus.activeItems : []).find(item => item.id === entry.id) || null;
+      return null;
+    }
+    function removeActiveFocusSource(entry) {
+      if (entry.source === 'task' && entry.taskId) {
+        const task = state.tasks.find(item => item.id === entry.taskId);
+        if (task) {
+          clearTaskActiveFocusFields(task);
+          if (task.status === 'active') task.status = 'todo';
+        }
+        return;
+      }
+      if (entry.source === 'subtask' && entry.taskId && entry.subtaskId) {
+        const task = state.tasks.find(item => item.id === entry.taskId);
+        const subtask = subtaskById(task, entry.subtaskId);
+        if (subtask) {
+          subtask.activeStartedAtTs = 0;
+          subtask.activeFocusId = '';
+          subtask.startedAt = '';
+          decorateFocusSource(subtask, { expectedMinutes:0 });
+        }
+        return;
+      }
+      state.focus.activeItems = (Array.isArray(state.focus.activeItems) ? state.focus.activeItems : []).filter(item => item.id !== entry.id);
+      if (state.focus.active?.id === entry.id) state.focus.active = null;
+    }
+    function addPendingFocusConfirmation(entry, autoClosedAtTs=Date.now()) {
+      state.focus.pendingConfirmations = Array.isArray(state.focus.pendingConfirmations) ? state.focus.pendingConfirmations : [];
+      if (state.focus.pendingConfirmations.some(item => item.focusId === entry.id)) return;
+      const expectedMinutes = clampFocusMinutes(entry.expectedMinutes, 0);
+      const pending = normalizePendingFocusConfirmation({
+        id: uid('pendingFocus'),
+        focusId: entry.id || uid('focus'),
+        source: entry.source || 'manual',
+        title: entry.title || '未命名专注',
+        parentTitle: entry.parentTitle || '',
+        category: entry.category || 'research',
+        note: entry.note || '',
+        date: entry.date || dateFromTimestamp(entry.startedAtTs),
+        start: entry.start || hmFromTimestamp(entry.startedAtTs),
+        startedAtTs: entry.startedAtTs,
+        expectedMinutes,
+        expectedEndAtTs: expectedMinutes ? Number(entry.startedAtTs) + expectedMinutes * 60000 : 0,
+        expectedEnd: expectedMinutes ? addMinutesToHM(entry.start || hmFromTimestamp(entry.startedAtTs), expectedMinutes) : '',
+        autoClosedAtTs,
+        autoEnd: hmFromTimestamp(autoClosedAtTs),
+        taskId: entry.taskId || '',
+        subtaskId: entry.subtaskId || ''
+      });
+      if (pending) state.focus.pendingConfirmations.unshift(pending);
+    }
+    function resolvePendingFocusConfirmation(pendingId, mode='expected', customEnd='') {
+      const pending = (state.focus.pendingConfirmations || []).find(item => item.id === pendingId);
+      if (!pending) return;
+      if (mode === 'delete') {
+        state.focus.pendingConfirmations = state.focus.pendingConfirmations.filter(item => item.id !== pendingId);
+        saveState(); renderAll(); openNextPendingFocusConfirmation();
+        return true;
+      }
+      const customEndHM = parseHM(customEnd);
+      if (mode === 'custom' && !customEndHM) {
+        alert('请先选择有效的真实结束时间。');
+        return false;
+      }
+      const end = mode === 'custom' ? customEndHM : mode === 'auto' ? pending.autoEnd : (pending.expectedEnd || pending.autoEnd);
+      const minutes = mode === 'expected' && pending.expectedMinutes
+        ? pending.expectedMinutes
+        : mode === 'auto'
+          ? minutesBetweenTimestamps(pending.startedAtTs, pending.autoClosedAtTs)
+          : Math.max(1, minutesBetween(pending.start, end));
+      recordFocusRun({
+        id: pending.focusId,
+        date: pending.date,
+        title: pending.title,
+        parentTitle: pending.parentTitle,
+        category: pending.category,
+        note: `${pending.note || ''}${pending.note ? '；' : ''}异常专注已确认`,
+        start: pending.start,
+        end,
+        minutes,
+        taskId: pending.taskId,
+        subtaskId: pending.subtaskId
+      });
+      state.focus.pendingConfirmations = state.focus.pendingConfirmations.filter(item => item.id !== pendingId);
+      saveState(); renderAll(); openNextPendingFocusConfirmation();
+      return true;
+    }
+    function openNextPendingFocusConfirmation() {
+      if (pendingFocusDialogOpen || $('editDialog')?.open) return;
+      const pending = normalizePendingFocusConfirmation((state.focus.pendingConfirmations || [])[0]);
+      if (!pending) return;
+      pendingFocusDialogOpen = true;
+      openEditDialog({
+        title:'确认专注结束时间',
+        desc:`${pending.title} · ${pending.start} 开始 · ${pending.expectedMinutes ? `预计 ${pending.expectedMinutes} 分钟` : '未设置预计时长'} · 系统 ${pending.autoEnd} 已暂停`,
+        saveLabel:'确认记录',
+        fields:[
+          { name:'endMode', label:'真实结束时间', type:'select', value:'expected', options:[
+            { value:'expected', label:`按预计结束时间 ${pending.expectedEnd || pending.autoEnd}` },
+            { value:'auto', label:`按系统兜底时间 ${pending.autoEnd}` },
+            { value:'custom', label:'我手动选择时间' },
+            { value:'delete', label:'删除这次异常记录' }
+          ] },
+          { name:'customEnd', label:'手动结束时间', type:'time', value:pending.expectedEnd || pending.autoEnd }
+        ],
+        onSave:(vals)=>{
+          if (vals.endMode === 'custom' && !parseHM(vals.customEnd)) {
+            alert('请先选择有效的真实结束时间。');
+            return false;
+          }
+          pendingFocusDialogOpen = false;
+          return resolvePendingFocusConfirmation(pending.id, vals.endMode, vals.customEnd);
+        },
+        onDelete:()=>{ pendingFocusDialogOpen = false; resolvePendingFocusConfirmation(pending.id, 'delete'); },
+        onCancel:()=>{ pendingFocusDialogOpen = false; }
+      });
+    }
+    function queueFocusProtectionRender() {
+      if (focusProtectionRenderQueued) return;
+      focusProtectionRenderQueued = true;
+      setTimeout(() => {
+        focusProtectionRenderQueued = false;
+        renderAll();
+        if (!hasRunningFocus()) stopFocusTicker();
+        setTimeout(openNextPendingFocusConfirmation, 0);
+      }, 0);
+    }
+    function syncFocusProtection() {
+      const settings = currentNotificationSettings();
+      let changed = false;
+      runningFocusEntries().forEach(entry => {
+        const source = focusSourceRef(entry);
+        if (!source || !entry.expectedMinutes) return;
+        const elapsedMinutes = Math.max(0, (Date.now() - (Number(entry.startedAtTs) || Date.now())) / 60000);
+        const leadAt = Math.max(0, entry.expectedMinutes - settings.focusLeadMinutes);
+        if (settings.focusLeadMinutes > 0 && !entry.focusLeadNoticeSent && elapsedMinutes >= leadAt && elapsedMinutes < entry.expectedMinutes) {
+          source.focusLeadNoticeSent = true;
+          changed = true;
+          sendFocusNotification('lead', entry);
+        }
+        if (!entry.focusDueNoticeSent && elapsedMinutes >= entry.expectedMinutes) {
+          source.focusDueNoticeSent = true;
+          changed = true;
+          sendFocusNotification('due', entry);
+        }
+        if (!entry.focusAutoClosed && elapsedMinutes >= entry.expectedMinutes + settings.focusGraceMinutes) {
+          source.focusAutoClosed = true;
+          addPendingFocusConfirmation(entry, Date.now());
+          removeActiveFocusSource(entry);
+          changed = true;
+          sendFocusNotification('auto', entry);
+        }
+      });
+      if (changed) {
+        saveState();
+        queueFocusProtectionRender();
+        openNextPendingFocusConfirmation();
+      }
+      return changed;
     }
     function activeRest() {
       if (!state.focus.rest || typeof state.focus.rest !== 'object') state.focus.rest = { active:null };
@@ -2690,6 +3006,10 @@
       if (!task) return;
       task.activeStartedAtTs = 0;
       task.activeFocusId = '';
+      task.expectedMinutes = 0;
+      task.focusLeadNoticeSent = false;
+      task.focusDueNoticeSent = false;
+      task.focusAutoClosed = false;
     }
     function taskHasStartTrace(task) {
       return !!(task?.startedAt || task?.activeStartedAtTs || task?.activeFocusId);
@@ -2735,6 +3055,10 @@
       subtask.activeStartedAtTs = 0;
       subtask.activeFocusId = '';
       subtask.startedAt = '';
+      subtask.expectedMinutes = 0;
+      subtask.focusLeadNoticeSent = false;
+      subtask.focusDueNoticeSent = false;
+      subtask.focusAutoClosed = false;
       return true;
     }
     function taskDeadlineDate(task) {
@@ -2878,17 +3202,7 @@
       clearTaskActiveFocusFields(task);
       return true;
     }
-    function toggleTaskStart(id) {
-      const task = state.tasks.find(item => item.id === id);
-      if (!task) return;
-      if (taskIsRunning(task)) {
-        finishActiveFocusRunForTask(task);
-        task.status = 'todo';
-        promoteNextActiveTaskFocus();
-        saveState(); renderAll();
-        if (hasRunningFocus()) startFocusTicker(); else stopFocusTicker();
-        return;
-      }
+    function startTaskFocusWithPlan(task, plan={}) {
       const startDateTime = nowDateTime();
       const focusId = uid('focus');
       task.status = 'active';
@@ -2900,8 +3214,27 @@
       task.startedAt = startDateTime;
       task.activeStartedAtTs = Date.now();
       task.activeFocusId = focusId;
+      decorateFocusSource(task, plan);
       saveState(); renderAll();
       startFocusTicker();
+    }
+    function toggleTaskStart(id) {
+      const task = state.tasks.find(item => item.id === id);
+      if (!task) return;
+      if (taskIsRunning(task)) {
+        finishActiveFocusRunForTask(task);
+        task.status = 'todo';
+        promoteNextActiveTaskFocus();
+        saveState(); renderAll();
+        if (hasRunningFocus()) startFocusTicker(); else stopFocusTicker();
+        return;
+      }
+      openFocusStartDialog({
+        title:'开始任务专注',
+        desc:task.title,
+        defaultMinutes:focusPlanDefaultMinutes(task),
+        onStart:(plan)=>startTaskFocusWithPlan(task, plan)
+      });
     }
     function finishTask(id) {
       const task = state.tasks.find(item => item.id === id);
@@ -3096,17 +3429,25 @@
         alert('该子任务已完成，如需继续专注请先取消完成状态。');
         return;
       }
-      const startDateTime = nowDateTime();
-      subtask.startedAt = startDateTime;
-      subtask.activeStartedAtTs = Date.now();
-      subtask.activeFocusId = uid('focus');
-      task.todayBucket = task.todayBucket || 'should';
-      if (task.gtdBucket === 'inbox' || task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') task.gtdBucket = 'next';
-      if (task.status === 'overdue' || task.status === 'planned') task.status = 'todo';
-      task.doneAt = '';
-      saveState();
-      renderAll();
-      startFocusTicker();
+      openFocusStartDialog({
+        title:'开始子任务专注',
+        desc:`${subtask.title} · 父任务：${task.title}`,
+        defaultMinutes:focusPlanDefaultMinutes(task),
+        onStart:(plan)=>{
+          const startDateTime = nowDateTime();
+          subtask.startedAt = startDateTime;
+          subtask.activeStartedAtTs = Date.now();
+          subtask.activeFocusId = uid('focus');
+          decorateFocusSource(subtask, plan);
+          task.todayBucket = task.todayBucket || 'should';
+          if (task.gtdBucket === 'inbox' || task.gtdBucket === 'done' || task.gtdBucket === 'memo' || task.gtdBucket === 'overdue') task.gtdBucket = 'next';
+          if (task.status === 'overdue' || task.status === 'planned') task.status = 'todo';
+          task.doneAt = '';
+          saveState();
+          renderAll();
+          startFocusTicker();
+        }
+      });
     }
     function toggleSubtaskDone(taskId, subtaskId) {
       const task = state.tasks.find(item => item.id === taskId);
@@ -3323,6 +3664,7 @@
       if ($('weekTimelineContainer')) renderWeekTimeline();
     }
     function renderFocusTimer() {
+      syncFocusProtection();
       const running = runningFocusEntries();
       const active = running[0] || null;
       const listEl = $('focusActiveTimers');
@@ -3355,10 +3697,17 @@
         const seconds = Math.max(0, Math.floor((Date.now() - (Number(item.startedAtTs) || Date.now())) / 1000));
         const bg = item.color || CATEGORY_COLORS[item.category] || CATEGORY_COLORS.other;
         const sourceLabel = item.source === 'subtask' ? `子任务 · ${item.parentTitle || '父任务'}` : item.source === 'task' ? '任务计时' : '手动专注';
+        const elapsedMinutes = seconds / 60;
+        const expected = clampFocusMinutes(item.expectedMinutes, 0);
+        const expectedMeta = expected
+          ? elapsedMinutes >= expected
+            ? ` · 已超时 ${formatClockFromMinutes(elapsedMinutes - expected)}`
+            : ` · ${focusPlanLabel(expected)}`
+          : ' · 未设预计';
         return `<div class="focus-runner-card" style="border-color:${colorWithAlpha(bg, .34)};background:linear-gradient(135deg, ${colorWithAlpha(bg, .1)}, rgba(255,255,255,.82));">
           <div class="min-w-0">
             <div class="focus-runner-title">${escapeHtml(item.title)}</div>
-            <div class="focus-runner-meta">${escapeHtml(sourceLabel)} · ${escapeHtml(item.start || '--:--')} 开始</div>
+            <div class="focus-runner-meta">${escapeHtml(sourceLabel)} · ${escapeHtml(item.start || '--:--')} 开始${escapeHtml(expectedMeta)}</div>
           </div>
           <div class="focus-runner-time mono">${formatElapsedSeconds(seconds)}</div>
           <button class="focus-runner-stop" data-focus-runner-task="${escapeHtml(item.taskId || '')}" data-focus-runner-subtask="${escapeHtml(item.subtaskId || '')}" data-focus-runner-id="${escapeHtml(item.id || '')}">结束</button>
@@ -3380,11 +3729,11 @@
         renderWeekTimeline();
       }
     }
-    function startFocus() {
+    function startFocusWithPlan(plan={}) {
       const linkedTask = activeTask();
       const title = $('focusTitle').value.trim() || linkedTask?.title || '未命名专注';
       if (!Array.isArray(state.focus.activeItems)) state.focus.activeItems = [];
-      state.focus.activeItems.unshift({
+      const active = {
         id: uid('focus'),
         title,
         category: $('focusCategory').value,
@@ -3393,9 +3742,19 @@
         start: nowTime(),
         startedAtTs: Date.now(),
         taskId: null
-      });
+      };
+      decorateFocusSource(active, plan);
+      state.focus.activeItems.unshift(active);
       saveState(); renderAll();
       startFocusTicker();
+    }
+    function startFocus() {
+      openFocusStartDialog({
+        title:'开始手动专注',
+        desc:'可设置预计时长；到点前后会按藏真阁配置推送提醒。',
+        defaultMinutes:25,
+        onStart:startFocusWithPlan
+      });
     }
     function stopFocus(focusId='', shouldRender=true) {
       if (typeof focusId === 'boolean') { shouldRender = focusId; focusId = ''; }
@@ -5462,17 +5821,21 @@
       if ($('notificationLeadMinutesInput')) $('notificationLeadMinutesInput').value = String(settings.leadMinutes);
       if ($('notificationAtDueToggle')) $('notificationAtDueToggle').checked = settings.atDue;
       if ($('notificationOverdueToggle')) $('notificationOverdueToggle').checked = settings.overdue;
+      if ($('focusLeadMinutesInput')) $('focusLeadMinutesInput').value = String(settings.focusLeadMinutes);
+      if ($('focusGraceMinutesInput')) $('focusGraceMinutesInput').value = String(settings.focusGraceMinutes);
     }
     function saveNotificationSettingsFromControls() {
       state.notificationSettings = normalizeNotificationSettings({
         enabled: !!$('notificationGlobalEnabledToggle')?.checked,
         leadMinutes: $('notificationLeadMinutesInput')?.value,
         atDue: !!$('notificationAtDueToggle')?.checked,
-        overdue: !!$('notificationOverdueToggle')?.checked
+        overdue: !!$('notificationOverdueToggle')?.checked,
+        focusLeadMinutes: $('focusLeadMinutesInput')?.value,
+        focusGraceMinutes: $('focusGraceMinutesInput')?.value
       });
       saveState();
       renderAll();
-      setNotificationStatus(`通知配置已保存：提前 ${state.notificationSettings.leadMinutes} 分钟。`, 'ok');
+      setNotificationStatus(`通知配置已保存：任务提前 ${state.notificationSettings.leadMinutes} 分钟，专注结束前 ${state.notificationSettings.focusLeadMinutes} 分钟提醒，超时 ${state.notificationSettings.focusGraceMinutes} 分钟兜底。`, 'ok');
     }
     function reminderScanHours() {
       return 168;
@@ -5484,7 +5847,7 @@
           method:'POST',
           body: JSON.stringify({
             title:'明心台测试提醒',
-            content:`测试通知已触发。当前默认提前 ${currentNotificationSettings().leadMinutes} 分钟。`
+            content:`测试通知已触发。任务默认提前 ${currentNotificationSettings().leadMinutes} 分钟；专注结束前 ${currentNotificationSettings().focusLeadMinutes} 分钟提醒。`
           })
         });
         setNotificationStatus(data.ok ? '测试通知已发送，请检查 WxPusher。' : '测试通知未成功，请检查后端环境变量。', data.ok ? 'ok' : 'warn');
@@ -5649,9 +6012,16 @@
         return `<label class="block"><div class="text-sm font-bold mb-1">${field.label}</div><input data-edit-field="${field.name}" type="${field.type||'text'}" value="${escapeHtml(field.value||'')}" class="w-full px-3 py-3 rounded-2xl border border-calm-line bg-white"></label>`;
       }).join('');
       $('btnDeleteRecord').style.display = config.onDelete ? 'inline-flex' : 'none';
+      $('btnSaveRecord').textContent = config.saveLabel || '保存修改';
       $('editDialog').showModal();
     }
-    function closeEditDialog() { $('editDialog').close(); editContext = null; }
+    function closeEditDialog(options={}) {
+      const ctx = editContext;
+      editContext = null;
+      if (!options.skipCancel && ctx?.onCancel) ctx.onCancel();
+      $('editDialog').close();
+      setTimeout(openNextPendingFocusConfirmation, 0);
+    }
     function collectEditValues() {
       const vals = {};
       $('editDialogBody').querySelectorAll('[data-edit-field]').forEach(el => vals[el.dataset.editField] = el.value);
@@ -6037,6 +6407,7 @@
       if (currentSection === 'dashboard-section') renderDashboard();
       if (currentSection === 'settings-section') refreshSettings();
       if (hasActiveRest()) renderRestTimer();
+      setTimeout(openNextPendingFocusConfirmation, 0);
     }
 
     function bindEvents() {
@@ -6174,7 +6545,7 @@
       if ($('btnNotificationTest')) $('btnNotificationTest').onclick = sendTestNotification;
       if ($('btnReminderPreview')) $('btnReminderPreview').onclick = () => scanReminderNotifications(true);
       if ($('btnReminderSend')) $('btnReminderSend').onclick = () => scanReminderNotifications(false);
-      ['notificationGlobalEnabledToggle','notificationLeadMinutesInput','notificationAtDueToggle','notificationOverdueToggle'].forEach(id => {
+      ['notificationGlobalEnabledToggle','notificationLeadMinutesInput','notificationAtDueToggle','notificationOverdueToggle','focusLeadMinutesInput','focusGraceMinutesInput'].forEach(id => {
         const el = $(id);
         if (!el) return;
         el.onchange = () => {
@@ -6182,15 +6553,30 @@
             enabled: !!$('notificationGlobalEnabledToggle')?.checked,
             leadMinutes: $('notificationLeadMinutesInput')?.value,
             atDue: !!$('notificationAtDueToggle')?.checked,
-            overdue: !!$('notificationOverdueToggle')?.checked
+            overdue: !!$('notificationOverdueToggle')?.checked,
+            focusLeadMinutes: $('focusLeadMinutesInput')?.value,
+            focusGraceMinutes: $('focusGraceMinutesInput')?.value
           });
         };
       });
       $('importFile').onchange = async (e) => { const file = e.target.files?.[0]; if (!file) return; importJsonText(await file.text()); e.target.value=''; };
 
-      $('btnCloseEditDialog').onclick = closeEditDialog;
-      $('btnSaveRecord').onclick = () => { if (editContext?.onSave) editContext.onSave(collectEditValues()); closeEditDialog(); };
-      $('btnDeleteRecord').onclick = () => { if (editContext?.onDelete && confirm('确定删除这条记录吗？')) { editContext.onDelete(); closeEditDialog(); } };
+      $('btnCloseEditDialog').onclick = () => closeEditDialog();
+      $('btnSaveRecord').onclick = () => {
+        if (editContext?.onSave) {
+          const result = editContext.onSave(collectEditValues());
+          if (result === false) return;
+        }
+        closeEditDialog({ skipCancel:true });
+      };
+      $('btnDeleteRecord').onclick = () => { if (editContext?.onDelete && confirm('确定删除这条记录吗？')) { editContext.onDelete(); closeEditDialog({ skipCancel:true }); } };
+      $('editDialog').addEventListener('cancel', (event) => { event.preventDefault(); closeEditDialog(); });
+      $('editDialog').addEventListener('close', () => {
+        if (!editContext) return;
+        const ctx = editContext;
+        editContext = null;
+        if (ctx?.onCancel) ctx.onCancel();
+      });
     }
 
     bindEvents();
