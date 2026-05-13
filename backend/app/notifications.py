@@ -24,8 +24,8 @@ def configured_channels() -> list[str]:
     return [item.strip().lower() for item in raw.split(",") if item.strip()]
 
 
-def send_wxpusher_message(title: str, content: str) -> NotificationResult:
-    spt = os.getenv("WXPUSHER_SPT", "").strip()
+def send_wxpusher_message(title: str, content: str, wxpusher_spt: str = "") -> NotificationResult:
+    spt = wxpusher_spt.strip()
     if not spt:
         return NotificationResult(
             channel="wxpusher",
@@ -73,11 +73,11 @@ def send_wxpusher_message(title: str, content: str) -> NotificationResult:
     )
 
 
-def send_notification(title: str, content: str) -> list[NotificationResult]:
+def send_notification(title: str, content: str, wxpusher_spt: str = "") -> list[NotificationResult]:
     results: list[NotificationResult] = []
     channels = configured_channels()
     if "wxpusher" in channels:
-        results.append(send_wxpusher_message(title=title, content=content))
+        results.append(send_wxpusher_message(title=title, content=content, wxpusher_spt=wxpusher_spt))
     if not results:
         results.append(
             NotificationResult(

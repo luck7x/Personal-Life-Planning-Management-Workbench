@@ -1067,8 +1067,13 @@
               <div class="small-stat p-4 space-y-3">
                 <div>
                   <div class="font-black">通知提醒</div>
-                  <div class="text-xs text-calm-mute mt-1">任务默认走全局规则；单个任务和子任务可在编辑里关闭或自定义。</div>
+                  <div class="text-xs text-calm-mute mt-1">默认不内置推送密钥；需要在这里填自己的 WxPusher SPT 后才会发送。</div>
                 </div>
+                <label class="block rounded-2xl bg-white border border-calm-line px-3 py-2">
+                  <div class="text-xs font-bold text-calm-mute mb-1">WxPusher SPT</div>
+                  <input id="wxpusherSptInput" type="password" autocomplete="off" placeholder="SPT_..." class="w-full px-3 py-2 rounded-2xl border border-calm-line bg-calm-bg text-sm">
+                  <div class="text-[11px] text-calm-mute mt-1 leading-5">用于发送到你自己的微信；留空时测试通知和自动提醒都会失败，不会默认发到别人手机。</div>
+                </label>
                 <label class="flex items-start gap-3 rounded-2xl bg-white border border-calm-line px-3 py-2 cursor-pointer">
                   <input id="notificationGlobalEnabledToggle" type="checkbox" class="mt-1 accent-[#9B5DE5]">
                   <span class="min-w-0">
@@ -1796,7 +1801,8 @@
         atDue: boolFromValue(source.atDue, true),
         overdue: boolFromValue(source.overdue, true),
         focusLeadMinutes: clampLeadMinutes(source.focusLeadMinutes, 5),
-        focusGraceMinutes: clampLeadMinutes(source.focusGraceMinutes, 60)
+        focusGraceMinutes: clampLeadMinutes(source.focusGraceMinutes, 60),
+        wxpusherSpt: String(source.wxpusherSpt || '').trim()
       };
     }
     function normalizeNotificationOverride(config={}, fallbackMode='default') {
@@ -2537,7 +2543,7 @@
     }
     async function sendFocusNotification(kind, entry) {
       const settings = currentNotificationSettings();
-      if (!settings.enabled || !entry?.expectedMinutes) return;
+      if (!settings.enabled || !entry?.expectedMinutes || !settings.wxpusherSpt) return;
       const expectedEnd = addMinutesToHM(entry.start || nowTime(), entry.expectedMinutes);
       const title = kind === 'lead' ? '专注即将结束' : kind === 'due' ? '专注预计时间已到' : '专注已自动暂停';
       const content = kind === 'lead'
@@ -2546,7 +2552,7 @@
           ? `${entry.title} 已到预计结束时间 ${expectedEnd}，如仍在专注可继续。`
           : `${entry.title} 已超过预计时长 ${settings.focusGraceMinutes} 分钟，系统已暂停计时，请回到明心台确认真实结束时间。`;
       try {
-        await backendFetch('/api/notifications/test', { method:'POST', body:JSON.stringify({ title, content }) });
+        await backendFetch('/api/notifications/test', { method:'POST', body:JSON.stringify({ title, content, wxpusher_spt: settings.wxpusherSpt }) });
       } catch (err) {
         console.warn('focus notification failed', err);
       }
@@ -5823,6 +5829,7 @@
       if ($('notificationOverdueToggle')) $('notificationOverdueToggle').checked = settings.overdue;
       if ($('focusLeadMinutesInput')) $('focusLeadMinutesInput').value = String(settings.focusLeadMinutes);
       if ($('focusGraceMinutesInput')) $('focusGraceMinutesInput').value = String(settings.focusGraceMinutes);
+      if ($('wxpusherSptInput')) $('wxpusherSptInput').value = settings.wxpusherSpt || '';
     }
     function saveNotificationSettingsFromControls() {
       state.notificationSettings = normalizeNotificationSettings({
@@ -5831,11 +5838,12 @@
         atDue: !!$('notificationAtDueToggle')?.checked,
         overdue: !!$('notificationOverdueToggle')?.checked,
         focusLeadMinutes: $('focusLeadMinutesInput')?.value,
-        focusGraceMinutes: $('focusGraceMinutesInput')?.value
+        focusGraceMinutes: $('focusGraceMinutesInput')?.value,
+        wxpusherSpt: $('wxpusherSptInput')?.value
       });
       saveState();
       renderAll();
-      setNotificationStatus(`通知配置已保存：任务提前 ${state.notificationSettings.leadMinutes} 分钟，专注结束前 ${state.notificationSettings.focusLeadMinutes} 分钟提醒，超时 ${state.notificationSettings.focusGraceMinutes} 分钟兜底。`, 'ok');
+      setNotificationStatus(`通知配置已保存：${state.notificationSettings.wxpusherSpt ? 'WxPusher 已配置' : 'WxPusher 未配置'}；任务提前 ${state.notificationSettings.leadMinutes} 分钟，专注结束前 ${state.notificationSettings.focusLeadMinutes} 分钟提醒。`, state.notificationSettings.wxpusherSpt ? 'ok' : 'warn');
     }
     function reminderScanHours() {
       return 168;
@@ -5843,14 +5851,20 @@
     async function sendTestNotification() {
       setNotificationStatus('正在发送测试通知...', 'idle');
       try {
+        const settings = currentNotificationSettings();
+        if (!settings.wxpusherSpt) {
+          setNotificationStatus('请先填写并保存 WxPusher SPT。', 'warn');
+          return;
+        }
         const data = await backendFetch('/api/notifications/test', {
           method:'POST',
           body: JSON.stringify({
             title:'明心台测试提醒',
-            content:`测试通知已触发。任务默认提前 ${currentNotificationSettings().leadMinutes} 分钟；专注结束前 ${currentNotificationSettings().focusLeadMinutes} 分钟提醒。`
+            content:`测试通知已触发。任务默认提前 ${settings.leadMinutes} 分钟；专注结束前 ${settings.focusLeadMinutes} 分钟提醒。`,
+            wxpusher_spt: settings.wxpusherSpt
           })
         });
-        setNotificationStatus(data.ok ? '测试通知已发送，请检查 WxPusher。' : '测试通知未成功，请检查后端环境变量。', data.ok ? 'ok' : 'warn');
+        setNotificationStatus(data.ok ? '测试通知已发送，请检查 WxPusher。' : '测试通知未成功，请检查 WxPusher SPT。', data.ok ? 'ok' : 'warn');
       } catch (err) {
         setNotificationStatus(`测试失败：${err.message || err}`, 'error');
       }
@@ -5859,13 +5873,18 @@
       saveNotificationSettingsFromControls();
       setNotificationStatus(dryRun ? '正在同步并预览待提醒任务...' : '正在同步并发送待提醒任务...', 'idle');
       try {
+        const settings = currentNotificationSettings();
+        if (!dryRun && !settings.wxpusherSpt) {
+          setNotificationStatus('请先填写并保存 WxPusher SPT，再发送提醒。', 'warn');
+          return;
+        }
         await backendFetch('/api/state', {
           method:'POST',
           body: JSON.stringify({ state, reason: dryRun ? 'reminder-preview' : 'reminder-send' })
         });
         const data = await backendFetch('/api/reminders/scan', {
           method:'POST',
-          body: JSON.stringify({ soon_hours: reminderScanHours(), dry_run: dryRun })
+          body: JSON.stringify({ soon_hours: reminderScanHours(), dry_run: dryRun, wxpusher_spt: settings.wxpusherSpt })
         });
         if (dryRun) {
           setNotificationStatus(`预览完成：待发送 ${data.pending?.length || 0} 条，已去重 ${data.already_sent || 0} 条。`, 'ok');
@@ -6545,7 +6564,7 @@
       if ($('btnNotificationTest')) $('btnNotificationTest').onclick = sendTestNotification;
       if ($('btnReminderPreview')) $('btnReminderPreview').onclick = () => scanReminderNotifications(true);
       if ($('btnReminderSend')) $('btnReminderSend').onclick = () => scanReminderNotifications(false);
-      ['notificationGlobalEnabledToggle','notificationLeadMinutesInput','notificationAtDueToggle','notificationOverdueToggle','focusLeadMinutesInput','focusGraceMinutesInput'].forEach(id => {
+      ['notificationGlobalEnabledToggle','notificationLeadMinutesInput','notificationAtDueToggle','notificationOverdueToggle','focusLeadMinutesInput','focusGraceMinutesInput','wxpusherSptInput'].forEach(id => {
         const el = $(id);
         if (!el) return;
         el.onchange = () => {
@@ -6555,7 +6574,8 @@
             atDue: !!$('notificationAtDueToggle')?.checked,
             overdue: !!$('notificationOverdueToggle')?.checked,
             focusLeadMinutes: $('focusLeadMinutesInput')?.value,
-            focusGraceMinutes: $('focusGraceMinutesInput')?.value
+            focusGraceMinutes: $('focusGraceMinutesInput')?.value,
+            wxpusherSpt: $('wxpusherSptInput')?.value
           });
         };
       });

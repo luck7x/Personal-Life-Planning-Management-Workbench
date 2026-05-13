@@ -48,11 +48,13 @@ class WorkspaceStateIn(BaseModel):
 class NotificationTestIn(BaseModel):
     title: str = "明心台测试提醒"
     content: str = "这是一条来自明心台后端的测试通知。"
+    wxpusher_spt: str = ""
 
 
 class ReminderScanIn(BaseModel):
     soon_hours: int = Field(default=24, ge=1, le=168)
     dry_run: bool = False
+    wxpusher_spt: str = ""
 
 
 def utc_now() -> str:
@@ -330,7 +332,11 @@ def restore_snapshot(snapshot_id: int, _: None = Depends(require_api_token)) -> 
 @app.post("/api/notifications/test")
 def test_notification(payload: NotificationTestIn, _: None = Depends(require_api_token)) -> dict[str, Any]:
     init_db()
-    results = send_notification(title=payload.title, content=payload.content)
+    results = send_notification(
+        title=payload.title,
+        content=payload.content,
+        wxpusher_spt=payload.wxpusher_spt,
+    )
     return {
         "ok": any(result.ok for result in results),
         "results": [serialize_notification_result(result) for result in results],
@@ -341,6 +347,11 @@ def test_notification(payload: NotificationTestIn, _: None = Depends(require_api
 def scan_reminders(payload: ReminderScanIn, _: None = Depends(require_api_token)) -> dict[str, Any]:
     init_db()
     workspace = read_workspace_state()["state"]
+    notification_settings = workspace.get("notificationSettings", {})
+    workspace_spt = ""
+    if isinstance(notification_settings, dict):
+        workspace_spt = str(notification_settings.get("wxpusherSpt") or "").strip()
+    wxpusher_spt = (payload.wxpusher_spt or workspace_spt).strip()
     candidates = collect_due_reminders(workspace, soon_hours=payload.soon_hours)
     unsent = [candidate for candidate in candidates if not notification_event_exists(candidate.event_key)]
     sent: list[dict[str, Any]] = []
@@ -348,7 +359,11 @@ def scan_reminders(payload: ReminderScanIn, _: None = Depends(require_api_token)
 
     if not payload.dry_run:
         for candidate in unsent:
-            results = send_notification(title=candidate.title, content=candidate.body)
+            results = send_notification(
+                title=candidate.title,
+                content=candidate.body,
+                wxpusher_spt=wxpusher_spt,
+            )
             item = {
                 "reminder": serialize_reminder(candidate),
                 "results": [serialize_notification_result(result) for result in results],
