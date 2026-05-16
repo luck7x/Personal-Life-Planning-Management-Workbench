@@ -111,6 +111,50 @@ class ReminderConfigTests(unittest.TestCase):
         self.assertEqual(len(candidates), 1)
         self.assertEqual(candidates[0].kind, "due_now")
 
+    def test_active_focus_generates_due_reminder(self):
+        started = (self.now - timedelta(minutes=25)).isoformat(timespec="minutes")
+        state = {
+            "notificationSettings": {"enabled": True, "focusLeadMinutes": 5},
+            "focus": {
+                "activeItems": [
+                    {
+                        "id": "f1",
+                        "title": "写作专注",
+                        "startedAt": started,
+                        "expectedMinutes": 25,
+                        "taskId": "t1",
+                    }
+                ]
+            },
+        }
+
+        candidates = collect_due_reminders(state, now=self.now)
+
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].kind, "focus_due")
+        self.assertEqual(candidates[0].task_id, "t1")
+
+    def test_active_focus_generates_lead_reminder(self):
+        started = (self.now - timedelta(minutes=20)).isoformat(timespec="minutes")
+        state = {
+            "notificationSettings": {"enabled": True, "focusLeadMinutes": 5},
+            "focus": {
+                "activeItems": [
+                    {
+                        "id": "f1",
+                        "title": "写作专注",
+                        "startedAt": started,
+                        "expectedMinutes": 25,
+                    }
+                ]
+            },
+        }
+
+        candidates = collect_due_reminders(state, now=self.now)
+
+        self.assertEqual(len(candidates), 1)
+        self.assertEqual(candidates[0].kind, "focus_soon")
+
 
 if __name__ == "__main__":
     unittest.main()

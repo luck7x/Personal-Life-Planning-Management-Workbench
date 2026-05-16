@@ -1,0 +1,8 @@
+[Unit]
+Description=Mingxintai reminder scan
+After=network.target mingxintai.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/mingxintai/backend.env
+ExecStart=/bin/sh -lc 'curl --fail --silent --show-error --request POST http://127.0.0.1:8000/api/reminders/scan --header "Content-Type: application/json" --header "X-Mingxin-Token: ${MINGXIN_API_TOKEN}" --data "{\"soon_hours\":168,\"dry_run\":false}" >/var/log/mingxintai-reminders.log'

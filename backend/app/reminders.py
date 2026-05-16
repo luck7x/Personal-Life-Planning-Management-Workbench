@@ -167,6 +167,89 @@ def build_subtask_candidate(task: dict[str, Any], subtask: dict[str, Any], kind:
     )
 
 
+def parse_started_datetime(item: dict[str, Any]) -> datetime | None:
+    value = item.get("startedAt") or item.get("started_at")
+    if value:
+        parsed = parse_due_datetime(value)
+        if parsed:
+            return parsed
+    started_ts = item.get("startedAtTs")
+    try:
+        millis = int(float(started_ts))
+    except (TypeError, ValueError):
+        return None
+    if millis <= 0:
+        return None
+    return datetime.fromtimestamp(millis / 1000, LOCAL_TZ)
+
+
+def collect_active_focus_items(state: dict[str, Any]) -> list[dict[str, Any]]:
+    focus = state.get("focus") if isinstance(state.get("focus"), dict) else {}
+    items: list[dict[str, Any]] = []
+    for item in focus.get("activeItems") or []:
+        if isinstance(item, dict):
+            items.append(item)
+    active = focus.get("active")
+    if isinstance(active, dict):
+        items.append(active)
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for item in items:
+        item_id = str(item.get("id") or "")
+        if item_id and item_id in seen:
+            continue
+        if item_id:
+            seen.add(item_id)
+        unique.append(item)
+    return unique
+
+
+def build_focus_candidate(item: dict[str, Any], kind: str, target_at: datetime, elapsed_minutes: int) -> ReminderCandidate:
+    title = str(item.get("title") or "未命名专注")
+    focus_id = str(item.get("id") or title)
+    task_id = str(item.get("taskId") or "")
+    subtask_id = str(item.get("subtaskId") or "")
+    heading = "专注预计结束" if kind == "focus_due" else "专注即将到点"
+    body = (
+        f"### {heading}\n\n"
+        f"- 专注：{title}\n"
+        f"- 已进行：{elapsed_minutes} 分钟\n"
+        f"- 目标时间：{format_due(target_at)}"
+    )
+    return ReminderCandidate(
+        event_key=f"{kind}:focus:{focus_id}:{target_at.strftime('%Y%m%dT%H%M')}",
+        title=f"明心台提醒：{heading}",
+        body=body,
+        kind=kind,
+        due_at=target_at.isoformat(),
+        task_id=task_id,
+        subtask_id=subtask_id,
+    )
+
+
+def collect_focus_reminders(state: dict[str, Any], now: datetime) -> list[ReminderCandidate]:
+    settings = state.get("notificationSettings") if isinstance(state.get("notificationSettings"), dict) else {}
+    if not parse_bool(settings.get("enabled"), True):
+        return []
+    lead_minutes = parse_lead_minutes(settings.get("focusLeadMinutes"), 5)
+    candidates: list[ReminderCandidate] = []
+    for item in collect_active_focus_items(state):
+        expected_minutes = parse_lead_minutes(item.get("expectedMinutes"), 0)
+        if expected_minutes <= 0:
+            continue
+        started_at = parse_started_datetime(item)
+        if not started_at:
+            continue
+        due_at = started_at + timedelta(minutes=expected_minutes)
+        elapsed = max(0, int((now - started_at).total_seconds() // 60))
+        if now >= due_at:
+            candidates.append(build_focus_candidate(item, "focus_due", due_at, elapsed))
+            continue
+        if lead_minutes > 0 and now >= due_at - timedelta(minutes=lead_minutes):
+            candidates.append(build_focus_candidate(item, "focus_soon", due_at, elapsed))
+    return candidates
+
+
 def collect_due_reminders(state: dict[str, Any], soon_hours: int = 24, now: datetime | None = None) -> list[ReminderCandidate]:
     current = now or local_now()
     global_rule = global_notification_rule(state)
@@ -190,4 +273,5 @@ def collect_due_reminders(state: dict[str, Any], soon_hours: int = 24, now: date
             kind = classify_due(current, subtask_due, soon_hours, subtask_rule)
             if kind:
                 candidates.append(build_subtask_candidate(task, subtask, kind, subtask_due))
+    candidates.extend(collect_focus_reminders(state, current))
     return candidates

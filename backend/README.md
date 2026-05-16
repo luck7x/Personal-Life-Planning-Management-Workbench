@@ -64,6 +64,8 @@ curl http://127.0.0.1:8000/api/health
 
 - `GET /api/health`：健康检查。
 - `GET /api/state`：读取当前完整工作台状态。设置 `MINGXIN_API_TOKEN` 后需要请求头 `X-Mingxin-Token`。
+- `GET /api/events`：SSE 实时状态变更推送。
+- `GET /api/entities`：读取实体表快照和计数，供后续 AI / 通知 / 调试使用。
 - `POST /api/state`：保存完整工作台状态，请求体格式：
 
 ```json
@@ -78,6 +80,19 @@ curl http://127.0.0.1:8000/api/health
 ```bash
 curl -H "X-Mingxin-Token: 换成你的密钥" http://127.0.0.1:8000/api/state
 ```
+
+第一批操作级 API 已提供，内部仍会回写完整 workspace state，兼容当前单页前端：
+
+- `POST /api/projects`：新增或修改项目，body 为 `{"item": {...}}`。
+- `POST /api/tasks`：新增或修改任务，body 为 `{"item": {...}}`。
+- `POST /api/tasks/{task_id}/subtasks`：新增或修改子任务。
+- `POST /api/time-blocks`：新增或修改日程时间块。
+- `POST /api/focus/start`：用服务端时间开始专注。
+- `POST /api/focus/stop`：结束指定专注，并生成专注记录。
+- `POST /api/operations/batch`：提交离线操作队列，`id` 相同的操作会幂等返回缓存结果。
+- `GET /api/ai/context?range_days=7`：读取 AI 分析所需的近期任务、项目、专注、复盘上下文。
+
+操作级 API 支持记录级乐观锁：请求体可带 `base_updated_at`。如果同一记录已被其他设备更新且未设置 `force:true`，接口返回 `409`，并附带最新记录。
 
 ## 自动备份
 
@@ -145,6 +160,16 @@ sudo systemctl status mingxintai
 ```
 
 当前 `/api/events` 实时推送使用单进程内事件通知。生产环境请保持 systemd 模板里的单 worker 启动方式，不要给 Uvicorn / Gunicorn 额外增加 `--workers`；如果后续需要多 worker，需要先把事件通知改为 Redis / Postgres / SQLite 轮询游标等跨进程机制。
+
+安装后台提醒 timer。它会每 5 分钟调用一次提醒扫描接口，即使浏览器关闭也能发送到期提醒：
+
+```bash
+sudo cp backend/deploy/systemd/mingxintai-reminders.service /etc/systemd/system/mingxintai-reminders.service
+sudo cp backend/deploy/systemd/mingxintai-reminders.timer /etc/systemd/system/mingxintai-reminders.timer
+sudo systemctl daemon-reload
+sudo systemctl enable --now mingxintai-reminders.timer
+sudo systemctl list-timers mingxintai-reminders.timer
+```
 
 安装 Nginx 配置前，先把 `backend/deploy/nginx/mingxintai.conf` 里的 `server_name example.com;` 改成你的域名。
 

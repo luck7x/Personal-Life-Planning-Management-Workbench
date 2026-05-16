@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Mingxintai reminder scan every five minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+AccuracySec=30s
+Unit=mingxintai-reminders.service
+
+[Install]
+WantedBy=timers.target
