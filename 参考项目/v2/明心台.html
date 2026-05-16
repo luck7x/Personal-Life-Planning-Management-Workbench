@@ -1228,6 +1228,7 @@
     const BACKEND_API_BASE_KEY = 'mingxin_backend_api_base_v1';
     const BACKEND_TOKEN_KEY = 'mingxin_backend_api_token_v1';
     const BACKEND_AUTO_SYNC_KEY = 'mingxin_backend_auto_sync_v1';
+    const BACKEND_LAST_SYNC_KEY = 'mingxin_backend_last_sync_v1';
     const PREF_DAY_TIMELINE_SCALE_KEY = `${STORAGE_KEY}__day_timeline_scale`;
     const PREF_WEEK_TIMELINE_SCALE_KEY = `${STORAGE_KEY}__week_timeline_scale`;
     const SUBMISSION_COLUMNS = ['选题中','写作中','待投稿','已投稿','审稿中','返修中','已接收','已见刊/已收录','搁置/拒稿'];
@@ -2365,8 +2366,11 @@
     const state = loadState();
     let workflowSelectedProjectId = '';
     let backendAutoSyncTimer = null;
+    let backendAutoPullTimer = null;
     let backendAutoSyncInFlight = false;
     let backendAutoSyncQueued = false;
+    let backendAutoPullInFlight = false;
+    let backendLastRemoteUpdatedAt = localStorage.getItem(BACKEND_LAST_SYNC_KEY) || '';
 
     function saveState(options = {}) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -5904,6 +5908,7 @@
       else localStorage.removeItem(BACKEND_API_BASE_KEY);
       syncBackendSyncControls();
       setBackendSyncStatus(`API 地址已设为：${getBackendApiBase()}`, 'ok');
+      restartBackendAutoPull();
     }
     function getBackendToken() {
       return localStorage.getItem(BACKEND_TOKEN_KEY) || '';
@@ -5914,6 +5919,7 @@
       else localStorage.removeItem(BACKEND_TOKEN_KEY);
       syncBackendSyncControls();
       setBackendSyncStatus(clean ? '访问密钥已保存。' : '访问密钥已清空。', clean ? 'ok' : 'warn');
+      restartBackendAutoPull();
     }
     function isBackendAutoSyncEnabled() {
       return localStorage.getItem(BACKEND_AUTO_SYNC_KEY) === '1';
@@ -5926,6 +5932,7 @@
         clearTimeout(backendAutoSyncTimer);
         backendAutoSyncTimer = null;
       }
+      restartBackendAutoPull();
     }
     function syncBackendSyncControls() {
       if ($('backendApiBaseInput')) $('backendApiBaseInput').value = getBackendApiBase();
@@ -5933,10 +5940,51 @@
       if ($('backendAutoSyncToggle')) $('backendAutoSyncToggle').checked = isBackendAutoSyncEnabled();
       if ($('backendAutoSyncMeta')) {
         $('backendAutoSyncMeta').textContent = isBackendAutoSyncEnabled()
-          ? '已开启：保存后约 2 秒自动上传。'
+          ? '已开启：保存后约 2 秒上传，并每 10 秒同步远端更新。'
           : '关闭后只保留手动上传。';
       }
       syncNotificationControls();
+    }
+    function rememberBackendUpdatedAt(updatedAt='') {
+      const clean = String(updatedAt || '').trim();
+      if (!clean) return;
+      backendLastRemoteUpdatedAt = clean;
+      localStorage.setItem(BACKEND_LAST_SYNC_KEY, clean);
+    }
+    function userIsEditingField() {
+      const el = document.activeElement;
+      if (!el) return false;
+      if (el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+      if (el.tagName !== 'INPUT') return false;
+      const type = String(el.type || 'text').toLowerCase();
+      return ['text','password','search','email','url','tel','number','date','time','datetime-local','month','week'].includes(type);
+    }
+    function restartBackendAutoPull() {
+      if (backendAutoPullTimer) {
+        clearInterval(backendAutoPullTimer);
+        backendAutoPullTimer = null;
+      }
+      if (!isBackendAutoSyncEnabled() || !getBackendToken()) return;
+      backendAutoPullTimer = setInterval(checkRemoteStateUpdate, 10000);
+      setTimeout(checkRemoteStateUpdate, 300);
+    }
+    async function checkRemoteStateUpdate() {
+      if (!isBackendAutoSyncEnabled() || !getBackendToken()) return;
+      if (backendAutoSyncInFlight || backendAutoPullInFlight || userIsEditingField()) return;
+      backendAutoPullInFlight = true;
+      try {
+        const data = await backendFetch('/api/state', { method:'GET' });
+        const updatedAt = String(data.updated_at || '');
+        if (!updatedAt || updatedAt === backendLastRemoteUpdatedAt) return;
+        if (!data || typeof data.state !== 'object' || data.state === null) throw new Error('后端返回的数据格式不正确');
+        applyWorkspacePayload(data.state, { skipAutoSync:true });
+        rememberBackendUpdatedAt(updatedAt);
+        setBackendSyncStatus(`已同步远端更新：${updatedAt}`, 'ok');
+      } catch (err) {
+        setBackendSyncStatus(`自动同步检查失败：${err.message || err}`, 'warn');
+      } finally {
+        backendAutoPullInFlight = false;
+      }
     }
     function scheduleAutoBackendSync() {
       if (!isBackendAutoSyncEnabled()) return;
@@ -5983,6 +6031,7 @@
           method:'POST',
           body: JSON.stringify({ state, reason })
         });
+        rememberBackendUpdatedAt(data.updated_at);
         setBackendSyncStatus(`${label}完成：${data.updated_at || nowDateTime()}`, 'ok');
       } catch (err) {
         setBackendSyncStatus(`${label}失败：${err.message || err}`, 'error');
@@ -6004,6 +6053,7 @@
         const data = await backendFetch('/api/state', { method:'GET' });
         if (!data || typeof data.state !== 'object' || data.state === null) throw new Error('后端返回的数据格式不正确');
         applyWorkspacePayload(data.state, { skipAutoSync:true });
+        rememberBackendUpdatedAt(data.updated_at);
         setBackendSyncStatus(`恢复完成：${data.updated_at || nowDateTime()}`, 'ok');
       } catch (err) {
         setBackendSyncStatus(`恢复失败：${err.message || err}`, 'error');
@@ -6602,6 +6652,7 @@
     bindEvents();
     loadPrefs();
     syncBackendSyncControls();
+    restartBackendAutoPull();
     renderAll();
     updateClock();
     setInterval(() => { updateClock(); syncScheduleTodayRollover(); }, 1000);
