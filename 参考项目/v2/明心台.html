@@ -1026,15 +1026,15 @@
           <div class="grid grid-cols-1 xl:grid-cols-[360px_minmax(0,1fr)] gap-6">
             <div class="space-y-4">
               <div class="small-stat p-4 text-sm space-y-2">
-                <div class="font-black">当前存储信息</div>
-                <div class="flex justify-between"><span>Storage Key</span><code class="text-xs">mingxin_workspace_merged_v1</code></div>
-                <div class="flex justify-between"><span>数据大小</span><span id="storageSizeText">0 KB</span></div>
+                <div class="font-black">本机缓存信息</div>
+                <div class="flex justify-between"><span>Cache Key</span><code class="text-xs">mingxin_workspace_merged_v1</code></div>
+                <div class="flex justify-between"><span>缓存大小</span><span id="storageSizeText">0 KB</span></div>
                 <div class="flex justify-between"><span>最后预览刷新</span><span id="settingsRefreshTime">-</span></div>
               </div>
               <div class="small-stat p-4 space-y-3">
                 <div>
                   <div class="font-black">后端同步</div>
-                  <div class="text-xs text-calm-mute mt-1">本地仍保留浏览器数据，开启后会自动同步到 FastAPI，手动按钮只作兜底。</div>
+                  <div class="text-xs text-calm-mute mt-1">在线模式以后端数据为准；浏览器只保留地址、密钥和离线缓存。</div>
                 </div>
                 <div class="space-y-2">
                   <label class="block text-xs font-bold text-calm-mute" for="backendApiBaseInput">API 地址</label>
@@ -1054,14 +1054,14 @@
                   <input id="backendAutoSyncToggle" type="checkbox" class="mt-1 accent-[#9B5DE5]">
                   <span class="min-w-0">
                     <span class="block text-sm font-black">自动同步</span>
-                    <span id="backendAutoSyncMeta" class="block text-xs text-calm-mute leading-5">关闭后只保留手动上传。</span>
+                    <span id="backendAutoSyncMeta" class="block text-xs text-calm-mute leading-5">关闭后仅使用本机缓存和手动按钮。</span>
                   </span>
                 </label>
                 <div id="backendSyncStatus" class="rounded-2xl bg-gray-100 text-calm-mute px-3 py-2 text-xs font-semibold">尚未检查后端。</div>
                 <div class="grid grid-cols-1 gap-2">
                   <button id="btnBackendHealth" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-semibold">检查后端</button>
-                  <button id="btnBackendPush" class="w-full px-4 py-3 rounded-2xl bg-dopamine-purple text-white font-black">上传本地到后端</button>
-                  <button id="btnBackendPull" class="w-full px-4 py-3 rounded-2xl bg-purple-50 text-dopamine-purple border border-purple-100 font-black">从后端恢复到本地</button>
+                  <button id="btnBackendPush" class="w-full px-4 py-3 rounded-2xl bg-dopamine-purple text-white font-black">把本机缓存覆盖到后端</button>
+                  <button id="btnBackendPull" class="w-full px-4 py-3 rounded-2xl bg-purple-50 text-dopamine-purple border border-purple-100 font-black">立即读取后端数据</button>
                 </div>
               </div>
               <div class="small-stat p-4 space-y-3">
@@ -5913,6 +5913,12 @@
     function getBackendToken() {
       return localStorage.getItem(BACKEND_TOKEN_KEY) || '';
     }
+    function hasBackendCredentials() {
+      return !!getBackendToken();
+    }
+    function shouldUseBackendAsSource() {
+      return isBackendAutoSyncEnabled() && hasBackendCredentials();
+    }
     function setBackendToken(token) {
       const clean = String(token || '').trim();
       if (clean) localStorage.setItem(BACKEND_TOKEN_KEY, clean);
@@ -5927,12 +5933,13 @@
     function setBackendAutoSyncEnabled(enabled) {
       localStorage.setItem(BACKEND_AUTO_SYNC_KEY, enabled ? '1' : '0');
       syncBackendSyncControls();
-      setBackendSyncStatus(enabled ? '自动同步已开启，后续保存会自动上传。' : '自动同步已关闭，仍可手动上传。', enabled ? 'ok' : 'warn');
+      setBackendSyncStatus(enabled ? '在线模式已开启，正在以后端数据为准。' : '在线模式已关闭，当前只使用本机缓存。', enabled ? 'ok' : 'warn');
       if (!enabled && backendAutoSyncTimer) {
         clearTimeout(backendAutoSyncTimer);
         backendAutoSyncTimer = null;
       }
       restartBackendAutoPull();
+      if (enabled) loadStateFromBackend({ confirmFirst:false, label:'在线载入', emptyMessage:'后端暂无数据，本机缓存暂时保留；确认无误后可手动覆盖到后端。' });
     }
     function syncBackendSyncControls() {
       if ($('backendApiBaseInput')) $('backendApiBaseInput').value = getBackendApiBase();
@@ -5940,8 +5947,8 @@
       if ($('backendAutoSyncToggle')) $('backendAutoSyncToggle').checked = isBackendAutoSyncEnabled();
       if ($('backendAutoSyncMeta')) {
         $('backendAutoSyncMeta').textContent = isBackendAutoSyncEnabled()
-          ? '已开启：保存后约 2 秒上传，并每 10 秒同步远端更新。'
-          : '关闭后只保留手动上传。';
+          ? '在线模式：启动先读取后端，保存后约 2 秒写入后端，并每 10 秒拉取更新。'
+          : '关闭后仅使用本机缓存和手动按钮。';
       }
       syncNotificationControls();
     }
@@ -5964,12 +5971,12 @@
         clearInterval(backendAutoPullTimer);
         backendAutoPullTimer = null;
       }
-      if (!isBackendAutoSyncEnabled() || !getBackendToken()) return;
+      if (!shouldUseBackendAsSource()) return;
       backendAutoPullTimer = setInterval(checkRemoteStateUpdate, 10000);
       setTimeout(checkRemoteStateUpdate, 300);
     }
     async function checkRemoteStateUpdate() {
-      if (!isBackendAutoSyncEnabled() || !getBackendToken()) return;
+      if (!shouldUseBackendAsSource()) return;
       if (backendAutoSyncInFlight || backendAutoPullInFlight || userIsEditingField()) return;
       backendAutoPullInFlight = true;
       try {
@@ -5987,9 +5994,9 @@
       }
     }
     function scheduleAutoBackendSync() {
-      if (!isBackendAutoSyncEnabled()) return;
+      if (!shouldUseBackendAsSource()) return;
       if (backendAutoSyncTimer) clearTimeout(backendAutoSyncTimer);
-      setBackendSyncStatus('本地已保存，等待自动同步...', 'idle');
+      setBackendSyncStatus('已写入本机缓存，等待写入后端...', 'idle');
       backendAutoSyncTimer = setTimeout(() => {
         backendAutoSyncTimer = null;
         uploadStateToBackend({ confirmFirst:false, reason:'auto', label:'自动同步' });
@@ -6019,7 +6026,7 @@
       }
     }
     async function uploadStateToBackend({ confirmFirst = true, reason = 'manual', label = '上传' } = {}) {
-      if (confirmFirst && !confirm('确认把当前浏览器里的数据上传到后端吗？后端旧数据会被覆盖，但后端会先保存一个快照。')) return;
+      if (confirmFirst && !confirm('确认用当前浏览器缓存覆盖后端数据吗？后端旧数据会先保存一个快照。')) return;
       if (backendAutoSyncInFlight) {
         backendAutoSyncQueued = true;
         return;
@@ -6046,18 +6053,27 @@
     async function pushStateToBackend() {
       await uploadStateToBackend({ confirmFirst:true, reason:'manual', label:'上传' });
     }
-    async function pullStateFromBackend() {
-      if (!confirm('确认从后端恢复数据到当前浏览器吗？当前本地数据会被覆盖。')) return;
-      setBackendSyncStatus('正在从后端读取数据...', 'idle');
+    async function loadStateFromBackend({ confirmFirst = false, label = '读取', emptyMessage = '后端暂无数据，本机缓存暂时保留。' } = {}) {
+      if (confirmFirst && !confirm('确认立即读取后端数据吗？当前浏览器缓存会被后端数据覆盖。')) return false;
+      setBackendSyncStatus(`正在从后端${label}数据...`, 'idle');
       try {
         const data = await backendFetch('/api/state', { method:'GET' });
+        if (!data.updated_at) {
+          setBackendSyncStatus(emptyMessage, 'warn');
+          return false;
+        }
         if (!data || typeof data.state !== 'object' || data.state === null) throw new Error('后端返回的数据格式不正确');
         applyWorkspacePayload(data.state, { skipAutoSync:true });
         rememberBackendUpdatedAt(data.updated_at);
-        setBackendSyncStatus(`恢复完成：${data.updated_at || nowDateTime()}`, 'ok');
+        setBackendSyncStatus(`${label}完成：${data.updated_at || nowDateTime()}`, 'ok');
+        return true;
       } catch (err) {
-        setBackendSyncStatus(`恢复失败：${err.message || err}`, 'error');
+        setBackendSyncStatus(`${label}失败：${err.message || err}`, 'error');
+        return false;
       }
+    }
+    async function pullStateFromBackend() {
+      await loadStateFromBackend({ confirmFirst:true, label:'读取', emptyMessage:'后端暂无数据，本机缓存暂时保留；如需迁移，请点“把本机缓存覆盖到后端”。' });
     }
 
     function openEditDialog(config) {
@@ -6649,18 +6665,28 @@
       });
     }
 
-    bindEvents();
-    loadPrefs();
-    syncBackendSyncControls();
-    restartBackendAutoPull();
-    renderAll();
-    updateClock();
-    setInterval(() => { updateClock(); syncScheduleTodayRollover(); }, 1000);
-    if (hasRunningFocus()) startFocusTicker();
-    if (hasActiveRest()) {
-      openRestDialog();
-      startRestTicker();
+    async function startApp() {
+      bindEvents();
+      loadPrefs();
+      syncBackendSyncControls();
+      if (shouldUseBackendAsSource()) {
+        await loadStateFromBackend({
+          confirmFirst:false,
+          label:'启动载入',
+          emptyMessage:'后端暂无数据，已暂时使用本机缓存；确认无误后可手动覆盖到后端。'
+        });
+      }
+      restartBackendAutoPull();
+      renderAll();
+      updateClock();
+      setInterval(() => { updateClock(); syncScheduleTodayRollover(); }, 1000);
+      if (hasRunningFocus()) startFocusTicker();
+      if (hasActiveRest()) {
+        openRestDialog();
+        startRestTicker();
+      }
     }
+    startApp();
   </script>
 </body>
 </html>
