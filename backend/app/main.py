@@ -373,6 +373,7 @@ async def stream_state_events(
 
     async def event_generator():
         last_seen = start_event_id
+        yield ": connected\n\n"
         try:
             while True:
                 event_id, updated_at = await asyncio.to_thread(wait_for_workspace_state_update, last_seen)
