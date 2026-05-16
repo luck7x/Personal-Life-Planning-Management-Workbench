@@ -1,15 +1,18 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import secrets
 import sqlite3
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from fastapi import Depends, Header, HTTPException, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.notifications import NotificationResult, send_notification
@@ -38,6 +41,9 @@ load_env_file(BASE_DIR / ".env")
 CONFIGURED_DB_PATH = os.getenv("MINGXIN_DB_PATH", "").strip()
 DB_PATH = Path(CONFIGURED_DB_PATH).expanduser() if CONFIGURED_DB_PATH else BASE_DIR / "data" / "mingxintai.sqlite3"
 DATA_DIR = DB_PATH.parent
+STATE_EVENT_CONDITION = threading.Condition()
+STATE_EVENT_ID = 0
+STATE_EVENT_UPDATED_AT: str | None = None
 
 
 class WorkspaceStateIn(BaseModel):
@@ -151,6 +157,35 @@ def prune_old_snapshots(conn: sqlite3.Connection, keep: int = 200) -> None:
     )
 
 
+def publish_workspace_state_update(updated_at: str) -> int:
+    global STATE_EVENT_ID, STATE_EVENT_UPDATED_AT
+    with STATE_EVENT_CONDITION:
+        STATE_EVENT_ID += 1
+        STATE_EVENT_UPDATED_AT = updated_at
+        STATE_EVENT_CONDITION.notify_all()
+        return STATE_EVENT_ID
+
+
+def wait_for_workspace_state_update(last_event_id: int, timeout: float = 25.0) -> tuple[int, str | None]:
+    with STATE_EVENT_CONDITION:
+        if STATE_EVENT_ID <= last_event_id:
+            STATE_EVENT_CONDITION.wait(timeout=timeout)
+        return STATE_EVENT_ID, STATE_EVENT_UPDATED_AT
+
+
+def parse_event_id(raw: str | None) -> int:
+    try:
+        return max(0, int(str(raw or "").strip()))
+    except ValueError:
+        return 0
+
+
+def normalize_event_cursor(requested_event_id: int) -> int:
+    if requested_event_id > STATE_EVENT_ID:
+        return STATE_EVENT_ID
+    return requested_event_id
+
+
 def write_workspace_state_with_snapshot(
     state: dict[str, Any],
     reason: str = "manual",
@@ -198,6 +233,7 @@ def write_workspace_state_with_snapshot(
         )
         prune_old_snapshots(conn)
         conn.commit()
+    publish_workspace_state_update(updated_at)
     return {"state": state, "updated_at": updated_at}
 
 
@@ -325,6 +361,42 @@ def health() -> dict[str, Any]:
 def get_state(_: None = Depends(require_api_token)) -> dict[str, Any]:
     init_db()
     return read_workspace_state()
+
+
+@app.get("/api/events")
+async def stream_state_events(
+    _: None = Depends(require_api_token),
+    last_event_id: str | None = Header(default=None, alias="Last-Event-ID"),
+):
+    init_db()
+    start_event_id = normalize_event_cursor(parse_event_id(last_event_id)) or STATE_EVENT_ID
+
+    async def event_generator():
+        last_seen = start_event_id
+        try:
+            while True:
+                event_id, updated_at = await asyncio.to_thread(wait_for_workspace_state_update, last_seen)
+                if event_id > last_seen and updated_at:
+                    last_seen = event_id
+                    payload = json.dumps(
+                        {"updated_at": updated_at, "event_id": event_id},
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    )
+                    yield f"id: {event_id}\nevent: state\ndata: {payload}\n\n"
+                else:
+                    yield ": keepalive\n\n"
+        except asyncio.CancelledError:
+            return
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
+    )
 
 
 @app.post("/api/state")

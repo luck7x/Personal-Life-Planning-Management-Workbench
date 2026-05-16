@@ -144,6 +144,8 @@ sudo systemctl enable --now mingxintai
 sudo systemctl status mingxintai
 ```
 
+当前 `/api/events` 实时推送使用单进程内事件通知。生产环境请保持 systemd 模板里的单 worker 启动方式，不要给 Uvicorn / Gunicorn 额外增加 `--workers`；如果后续需要多 worker，需要先把事件通知改为 Redis / Postgres / SQLite 轮询游标等跨进程机制。
+
 安装 Nginx 配置前，先把 `backend/deploy/nginx/mingxintai.conf` 里的 `server_name example.com;` 改成你的域名。
 
 前端静态文件建议复制成英文文件名，避免服务器和浏览器对中文路径处理不一致：

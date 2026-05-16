@@ -12,13 +12,19 @@ class WorkspaceStateConflictTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.old_db_path = main.DB_PATH
         self.old_data_dir = main.DATA_DIR
+        self.old_event_id = main.STATE_EVENT_ID
+        self.old_event_updated_at = main.STATE_EVENT_UPDATED_AT
         main.DB_PATH = Path(self.tmp.name) / "state-conflict.sqlite3"
         main.DATA_DIR = main.DB_PATH.parent
+        main.STATE_EVENT_ID = 0
+        main.STATE_EVENT_UPDATED_AT = None
         main.init_db()
 
     def tearDown(self):
         main.DB_PATH = self.old_db_path
         main.DATA_DIR = self.old_data_dir
+        main.STATE_EVENT_ID = self.old_event_id
+        main.STATE_EVENT_UPDATED_AT = self.old_event_updated_at
         self.tmp.cleanup()
 
     def test_stale_base_updated_at_returns_conflict(self):
@@ -56,6 +62,23 @@ class WorkspaceStateConflictTests(unittest.TestCase):
         )
 
         self.assertEqual(forced["state"]["tasks"][0]["id"], "c")
+
+    def test_state_write_publishes_sse_event_metadata(self):
+        saved = main.write_workspace_state_with_snapshot({"tasks": [{"id": "a"}]}, reason="event")
+
+        self.assertEqual(main.STATE_EVENT_ID, 1)
+        self.assertEqual(main.STATE_EVENT_UPDATED_AT, saved["updated_at"])
+
+    def test_parse_event_id_tolerates_invalid_input(self):
+        self.assertEqual(main.parse_event_id("12"), 12)
+        self.assertEqual(main.parse_event_id("-1"), 0)
+        self.assertEqual(main.parse_event_id("bad"), 0)
+
+    def test_normalize_event_cursor_handles_server_restart(self):
+        main.STATE_EVENT_ID = 3
+
+        self.assertEqual(main.normalize_event_cursor(2), 2)
+        self.assertEqual(main.normalize_event_cursor(99), 3)
 
 
 if __name__ == "__main__":

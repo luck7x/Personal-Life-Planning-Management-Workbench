@@ -2367,10 +2367,13 @@
     let workflowSelectedProjectId = '';
     let backendAutoSyncTimer = null;
     let backendAutoPullTimer = null;
+    let backendEventSource = null;
     let backendAutoSyncInFlight = false;
     let backendAutoSyncQueued = false;
     let backendAutoPullInFlight = false;
     let backendLastRemoteUpdatedAt = localStorage.getItem(BACKEND_LAST_SYNC_KEY) || '';
+    let backendPendingRemoteUpdatedAt = '';
+    let backendPendingFocusHandlerBound = false;
 
     function saveState(options = {}) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -5966,16 +5969,74 @@
       const type = String(el.type || 'text').toLowerCase();
       return ['text','password','search','email','url','tel','number','date','time','datetime-local','month','week'].includes(type);
     }
-    function restartBackendAutoPull() {
+    function bindBackendPendingRemoteHandler() {
+      if (backendPendingFocusHandlerBound) return;
+      backendPendingFocusHandlerBound = true;
+      document.addEventListener('focusout', () => {
+        setTimeout(() => {
+          if (!backendPendingRemoteUpdatedAt || userIsEditingField()) return;
+          backendPendingRemoteUpdatedAt = '';
+          checkRemoteStateUpdate('pending');
+        }, 0);
+      }, true);
+    }
+    function stopBackendEventStream() {
+      if (backendEventSource) {
+        backendEventSource.close();
+        backendEventSource = null;
+      }
       if (backendAutoPullTimer) {
         clearInterval(backendAutoPullTimer);
         backendAutoPullTimer = null;
       }
-      if (!shouldUseBackendAsSource()) return;
-      backendAutoPullTimer = setInterval(checkRemoteStateUpdate, 10000);
-      setTimeout(checkRemoteStateUpdate, 300);
     }
-    async function checkRemoteStateUpdate() {
+    function restartBackendAutoPull() {
+      stopBackendEventStream();
+      if (!shouldUseBackendAsSource()) return;
+      bindBackendPendingRemoteHandler();
+      setTimeout(checkRemoteStateUpdate, 300);
+      startBackendEventStream();
+    }
+    function startBackendPollingFallback(message) {
+      if (!backendAutoPullTimer) {
+        backendAutoPullTimer = setInterval(() => checkRemoteStateUpdate('fallback'), 60000);
+      }
+      if (message) setBackendSyncStatus(message, 'warn');
+    }
+    function startBackendEventStream() {
+      if (!('EventSource' in window)) {
+        startBackendPollingFallback('当前浏览器不支持实时连接，已降级为低频检查。');
+        return;
+      }
+      const base = getBackendApiBase();
+      if (base && new URL(base, location.href).origin !== location.origin) {
+        startBackendPollingFallback('自定义跨域 API 无法建立无感实时连接，已降级为低频检查。');
+        return;
+      }
+      backendEventSource = new EventSource(`${base}/api/events`, { withCredentials:true });
+      backendEventSource.addEventListener('open', () => {
+        setBackendSyncStatus('实时连接已建立，等待后端变更推送。', 'ok');
+      });
+      backendEventSource.addEventListener('state', (event) => {
+        handleBackendStateEvent(event.data);
+      });
+      backendEventSource.onerror = () => {
+        startBackendPollingFallback('实时连接暂时断开，已启用低频兜底检查。');
+      };
+    }
+    function handleBackendStateEvent(raw) {
+      let payload = {};
+      try { payload = JSON.parse(raw || '{}'); } catch (err) { payload = {}; }
+      const updatedAt = String(payload.updated_at || '').trim();
+      if (!updatedAt || updatedAt === backendLastRemoteUpdatedAt) return;
+      if (backendAutoSyncInFlight || backendAutoPullInFlight || userIsEditingField()) {
+        backendPendingRemoteUpdatedAt = updatedAt;
+        setBackendSyncStatus('另一端已有更新，结束当前输入后自动读取。', 'warn');
+        return;
+      }
+      checkRemoteStateUpdate('push');
+    }
+    async function checkRemoteStateUpdate(source='manual') {
       if (!shouldUseBackendAsSource()) return;
       if (backendAutoSyncInFlight || backendAutoPullInFlight || userIsEditingField()) return;
       backendAutoPullInFlight = true;
@@ -5986,7 +6047,7 @@
         if (!data || typeof data.state !== 'object' || data.state === null) throw new Error('后端返回的数据格式不正确');
         applyWorkspacePayload(data.state, { skipAutoSync:true });
         rememberBackendUpdatedAt(updatedAt);
-        setBackendSyncStatus(`已同步远端更新：${updatedAt}`, 'ok');
+        setBackendSyncStatus(`${source === 'push' ? '已接收实时更新' : '已同步远端更新'}：${updatedAt}`, 'ok');
       } catch (err) {
         setBackendSyncStatus(`自动同步检查失败：${err.message || err}`, 'warn');
       } finally {
