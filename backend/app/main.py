@@ -43,6 +43,8 @@ DATA_DIR = DB_PATH.parent
 class WorkspaceStateIn(BaseModel):
     state: dict[str, Any] = Field(default_factory=dict)
     reason: str = "manual"
+    base_updated_at: str | None = None
+    force: bool = False
 
 
 class NotificationTestIn(BaseModel):
@@ -149,13 +151,33 @@ def prune_old_snapshots(conn: sqlite3.Connection, keep: int = 200) -> None:
     )
 
 
-def write_workspace_state_with_snapshot(state: dict[str, Any], reason: str = "manual") -> dict[str, Any]:
+def write_workspace_state_with_snapshot(
+    state: dict[str, Any],
+    reason: str = "manual",
+    base_updated_at: str | None = None,
+    force: bool = False,
+) -> dict[str, Any]:
     updated_at = utc_now()
     payload = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
     with connect_db() as conn:
         current = conn.execute(
-            "SELECT payload FROM workspace_state WHERE id = 1"
+            "SELECT payload, updated_at FROM workspace_state WHERE id = 1"
         ).fetchone()
+        current_updated_at = current["updated_at"] if current else None
+        clean_base = (base_updated_at or "").strip()
+        if current and clean_base and clean_base != current_updated_at and not force:
+            try:
+                current_state = json.loads(current["payload"])
+            except json.JSONDecodeError as exc:
+                raise HTTPException(status_code=500, detail="Stored state is not valid JSON") from exc
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "message": "Workspace state has changed on another device",
+                    "updated_at": current_updated_at,
+                    "state": current_state,
+                },
+            )
         if current and current["payload"] != payload:
             conn.execute(
                 """
@@ -308,7 +330,12 @@ def get_state(_: None = Depends(require_api_token)) -> dict[str, Any]:
 @app.post("/api/state")
 def save_state(payload: WorkspaceStateIn, _: None = Depends(require_api_token)) -> dict[str, Any]:
     init_db()
-    return write_workspace_state_with_snapshot(payload.state, reason=payload.reason)
+    return write_workspace_state_with_snapshot(
+        payload.state,
+        reason=payload.reason,
+        base_updated_at=payload.base_updated_at,
+        force=payload.force,
+    )
 
 
 @app.get("/api/snapshots")

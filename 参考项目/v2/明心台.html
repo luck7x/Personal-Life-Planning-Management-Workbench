@@ -1034,23 +1034,23 @@
               <div class="small-stat p-4 space-y-3">
                 <div>
                   <div class="font-black">后端同步</div>
-                  <div class="text-xs text-calm-mute mt-1">在线模式以后端数据为准；浏览器只保留地址、密钥和离线缓存。</div>
+                  <div class="text-xs text-calm-mute mt-1">在线工作台默认使用当前站点后端；浏览器只保留界面偏好和离线兜底缓存。</div>
                 </div>
-                <div class="space-y-2">
+                <div class="space-y-2 hidden">
                   <label class="block text-xs font-bold text-calm-mute" for="backendApiBaseInput">API 地址</label>
                   <div class="flex gap-2">
                     <input id="backendApiBaseInput" type="url" autocomplete="off" class="min-w-0 flex-1 px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
                     <button id="btnBackendSaveApiBase" class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-calm-line text-sm font-black">保存</button>
                   </div>
                 </div>
-                <div class="space-y-2">
+                <div class="space-y-2 hidden">
                   <label class="block text-xs font-bold text-calm-mute" for="backendTokenInput">访问密钥</label>
                   <div class="flex gap-2">
                     <input id="backendTokenInput" type="password" autocomplete="off" placeholder="部署 VPS 后填写" class="min-w-0 flex-1 px-3 py-2 rounded-2xl border border-calm-line bg-white text-sm">
                     <button id="btnBackendSaveToken" class="shrink-0 px-3 py-2 rounded-2xl bg-white border border-calm-line text-sm font-black">保存</button>
                   </div>
                 </div>
-                <label class="flex items-start gap-3 rounded-2xl bg-white border border-calm-line px-3 py-2 cursor-pointer">
+                <label class="hidden items-start gap-3 rounded-2xl bg-white border border-calm-line px-3 py-2 cursor-pointer">
                   <input id="backendAutoSyncToggle" type="checkbox" class="mt-1 accent-[#9B5DE5]">
                   <span class="min-w-0">
                     <span class="block text-sm font-black">自动同步</span>
@@ -1060,8 +1060,8 @@
                 <div id="backendSyncStatus" class="rounded-2xl bg-gray-100 text-calm-mute px-3 py-2 text-xs font-semibold">尚未检查后端。</div>
                 <div class="grid grid-cols-1 gap-2">
                   <button id="btnBackendHealth" class="w-full px-4 py-3 rounded-2xl bg-white border border-calm-line font-semibold">检查后端</button>
-                  <button id="btnBackendPush" class="w-full px-4 py-3 rounded-2xl bg-dopamine-purple text-white font-black">把本机缓存覆盖到后端</button>
-                  <button id="btnBackendPull" class="w-full px-4 py-3 rounded-2xl bg-purple-50 text-dopamine-purple border border-purple-100 font-black">立即读取后端数据</button>
+                  <button id="btnBackendPush" class="hidden w-full px-4 py-3 rounded-2xl bg-dopamine-purple text-white font-black">把本机缓存覆盖到后端</button>
+                  <button id="btnBackendPull" class="hidden w-full px-4 py-3 rounded-2xl bg-purple-50 text-dopamine-purple border border-purple-100 font-black">立即读取后端数据</button>
                 </div>
               </div>
               <div class="small-stat p-4 space-y-3">
@@ -1224,7 +1224,7 @@
   <script>
     const STORAGE_KEY = 'mingxin_workspace_merged_v1';
     const LEGACY_STORAGE_KEYS = ['phd_master_workspace_merged_v1'];
-    const BACKEND_API_BASE = 'http://127.0.0.1:8000';
+    const BACKEND_API_BASE = '';
     const BACKEND_API_BASE_KEY = 'mingxin_backend_api_base_v1';
     const BACKEND_TOKEN_KEY = 'mingxin_backend_api_token_v1';
     const BACKEND_AUTO_SYNC_KEY = 'mingxin_backend_auto_sync_v1';
@@ -5914,7 +5914,7 @@
       return localStorage.getItem(BACKEND_TOKEN_KEY) || '';
     }
     function hasBackendCredentials() {
-      return !!getBackendToken();
+      return !getBackendApiBase() || !!getBackendToken();
     }
     function shouldUseBackendAsSource() {
       return isBackendAutoSyncEnabled() && hasBackendCredentials();
@@ -5928,7 +5928,7 @@
       restartBackendAutoPull();
     }
     function isBackendAutoSyncEnabled() {
-      return localStorage.getItem(BACKEND_AUTO_SYNC_KEY) === '1';
+      return localStorage.getItem(BACKEND_AUTO_SYNC_KEY) !== '0';
     }
     function setBackendAutoSyncEnabled(enabled) {
       localStorage.setItem(BACKEND_AUTO_SYNC_KEY, enabled ? '1' : '0');
@@ -5947,8 +5947,8 @@
       if ($('backendAutoSyncToggle')) $('backendAutoSyncToggle').checked = isBackendAutoSyncEnabled();
       if ($('backendAutoSyncMeta')) {
         $('backendAutoSyncMeta').textContent = isBackendAutoSyncEnabled()
-          ? '在线模式：启动先读取后端，保存后约 2 秒写入后端，并每 10 秒拉取更新。'
-          : '关闭后仅使用本机缓存和手动按钮。';
+          ? '在线模式：启动先读取后端，保存后约 2 秒写入后端；多端变更会自动拉取。'
+          : '离线模式：仅使用本机缓存。';
       }
       syncNotificationControls();
     }
@@ -6004,7 +6004,8 @@
     }
     async function backendFetch(path, options = {}) {
       const token = getBackendToken();
-      const res = await fetch(`${getBackendApiBase()}${path}`, {
+      const base = getBackendApiBase();
+      const res = await fetch(`${base}${path}`, {
         ...options,
         headers: {
           'Content-Type': 'application/json',
@@ -6013,7 +6014,13 @@
         }
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.detail || `HTTP ${res.status}`);
+      if (!res.ok) {
+        const detail = data.detail || `HTTP ${res.status}`;
+        const err = new Error(typeof detail === 'string' ? detail : (detail.message || `HTTP ${res.status}`));
+        err.status = res.status;
+        err.detail = detail;
+        throw err;
+      }
       return data;
     }
     async function checkBackendHealth() {
@@ -6024,6 +6031,26 @@
       } catch (err) {
         setBackendSyncStatus(`后端不可用：${err.message || err}`, 'error');
       }
+    }
+    async function resolveBackendStateConflict(detail, { reason = 'manual', label = '上传' } = {}) {
+      const remoteUpdatedAt = detail?.updated_at || '';
+      const chooseRemote = confirm(`后端数据刚刚被另一端更新（${remoteUpdatedAt || '时间未知'}）。\n\n点“确定”：读取后端最新数据。\n点“取消”：用当前页面数据覆盖后端。`);
+      if (chooseRemote) {
+        if (detail && typeof detail.state === 'object' && detail.state !== null) {
+          applyWorkspacePayload(detail.state, { skipAutoSync:true });
+          rememberBackendUpdatedAt(remoteUpdatedAt);
+          setBackendSyncStatus(`已读取另一端更新：${remoteUpdatedAt || nowDateTime()}`, 'ok');
+          return true;
+        }
+        return loadStateFromBackend({ confirmFirst:false, label:'读取' });
+      }
+      const data = await backendFetch('/api/state', {
+        method:'POST',
+        body: JSON.stringify({ state, reason:`force:${reason}`, base_updated_at: backendLastRemoteUpdatedAt, force:true })
+      });
+      rememberBackendUpdatedAt(data.updated_at);
+      setBackendSyncStatus(`${label}已覆盖后端：${data.updated_at || nowDateTime()}`, 'warn');
+      return true;
     }
     async function uploadStateToBackend({ confirmFirst = true, reason = 'manual', label = '上传' } = {}) {
       if (confirmFirst && !confirm('确认用当前浏览器缓存覆盖后端数据吗？后端旧数据会先保存一个快照。')) return;
@@ -6036,12 +6063,20 @@
       try {
         const data = await backendFetch('/api/state', {
           method:'POST',
-          body: JSON.stringify({ state, reason })
+          body: JSON.stringify({ state, reason, base_updated_at: backendLastRemoteUpdatedAt, force:false })
         });
         rememberBackendUpdatedAt(data.updated_at);
         setBackendSyncStatus(`${label}完成：${data.updated_at || nowDateTime()}`, 'ok');
       } catch (err) {
-        setBackendSyncStatus(`${label}失败：${err.message || err}`, 'error');
+        if (err.status === 409) {
+          try {
+            await resolveBackendStateConflict(err.detail, { reason, label });
+          } catch (resolveErr) {
+            setBackendSyncStatus(`冲突处理失败：${resolveErr.message || resolveErr}`, 'error');
+          }
+        } else {
+          setBackendSyncStatus(`${label}失败：${err.message || err}`, 'error');
+        }
       } finally {
         backendAutoSyncInFlight = false;
         if (backendAutoSyncQueued) {
