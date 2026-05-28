@@ -2,15 +2,13 @@
 
 ## Current Focus
 
-- 已正式决定放弃原脏 worktree 作为后续开发主线。
-- 当前唯一正式开发分支已规范为 `feature/self-supervision-mvp`，其工作目录仍位于 `D:/lucky/Supplies/个人/APP/监督反思/.worktrees/archive-merge-into-self-supervision/prototype-mvp`。
-- 当前焦点已从“主线切换决策”推进到“在规范后的唯一开发分支上继续功能开发”，最近完成项为 `Done -> Archived` 每日自动流转。
+- 仓库分支已收敛为占位的 main 与唯一开发分支 feature/self-supervision-mvp；后续开发与验证统一在 feature/self-supervision-mvp 对应 worktree 上进行。
 
 ## Active Issues
 
-- 原脏现场 worktree 仍保留未整理 diff，但其分支已归档为 `archive/feature-self-supervision-mvp-dirty-20260417`，只作为历史现场和取证参考。
-- clean 归档实现分支已归档为 `archive/feature-archive-task1-clean`；后续不要再从该分支起新改动。
-- merge worktree 目录名仍保留旧命名 `archive-merge-into-self-supervision`，但其绑定分支已是唯一正式开发分支 `feature/self-supervision-mvp`；后续要以分支名而不是目录名识别主线。
+- main 已重置为占位分支，只保留 README.md 与 .gitignore；不要再把 main 当作功能开发主线。
+- 唯一正式开发分支为 feature/self-supervision-mvp；当前开发目录仍位于 .worktrees/archive-merge-into-self-supervision，后续要以分支名而不是目录名识别主线。
+- 旧目录 .worktrees/self-supervision-mvp 仍有物理残留，因为 qa-http-server.log 正被占用；这不是 Git worktree 绑定问题，而是日志文件句柄未释放。
 
 ## Blockers
 
@@ -18,9 +16,9 @@
 
 ## Next 3 Actions
 
-1. 后续所有实现、测试和浏览器验证统一在 `feature/self-supervision-mvp` 所在 worktree 上执行；开始新任务前先检查 `git status --short`。
-2. 继续围绕 Web 任务工作台主线推进下一功能，默认包含 `.gitignore` 中 `.ace-tool/` 的最新忽略规则。
-3. 在下一个明确里程碑后补新的 handoff / issue，同步记录“分支规范化后的首个开发节点”，防止状态再次漂移。
+1. 后续所有实现、测试和浏览器验证统一在 feature/self-supervision-mvp 所在 worktree 上执行；开始新任务前先检查 git status --short。
+2. 在方便时停止占用 qa-http-server.log 的进程，删除残留目录 .worktrees/self-supervision-mvp，完成旧 worktree 物理清理。
+3. 下一次阶段性变更后补新的 handoff 或 ops-sync，避免状态再次停留在旧的 merge/archive 命名上。
 
 ## Done
 - 已完成项目持久上下文初始化。
@@ -82,6 +80,10 @@
 - 已补齐 `Done -> Archived` 每日自动流转：`rolloverTasks()` 现在会在跨日本地日时自动归档已完成任务，`bootstrap()` 载入旧状态时同样生效。
 - 已补测试锁定自动归档行为：`tests/rollover-calendar.test.js` 与 `tests/task-view-dom.test.js` 定向验证共 `34/34` 通过。
 - 已完成分支规范化：唯一正式开发分支为 `feature/self-supervision-mvp`，旧脏现场与 clean 临时分支分别归档为 `archive/feature-self-supervision-mvp-dirty-20260417` 与 `archive/feature-archive-task1-clean`。
+- 已对 main 的未提交现场做归档提交 caae4f1，并随后提交 31591b8 将 main 重置为仅保留 README.md 与 .gitignore 的占位分支。
+- 已对原 clean / dirty 归档分支的未提交现场分别做归档提交 80a7183 与 496ca89，并删除对应分支引用。
+- 已删除其他项目分支，当前 git branch -vv 只剩 main 与 feature/self-supervision-mvp。
+- 已保留 archive-feature-archive-task1-clean-20260417 与 archive-feature-self-supervision-mvp-dirty-20260417 两个 tag，作为已删分支历史锚点。
 
 ## Notes
 - 当前真实主线已从旧日历优化切到 Web 任务工作台与归档模块；除非用户明确切回，否则不要再按旧 overlap / now line Next 3 推进。
@@ -109,3 +111,6 @@
 - 除非用户明确要求回收或清理旧现场，否则不要删除、重置或覆盖原 `feature/self-supervision-mvp` worktree；它当前只承担“保留脏现场”的作用。
 - 后续窗口若看到 `progress.md` 与本地 worktree 事实冲突，应以 merge worktree 的实时 `git status` / `git log` 为准。
 - 当前 `.gitignore` 的最新期望状态包含 `.ace-tool/` 忽略规则；后续不要把这类环境差异视作业务功能变更。
+- main 当前是空壳入口分支，README.md 明确声明 MVP 主力开发分支为 feature/self-supervision-mvp。
+- 当前 feature/self-supervision-mvp 对应 worktree 工作区干净，最新提交为 409fbc0 feat: automate done task archival on rollover。
+- 如果后续需要彻底清理旧目录，先处理 qa-http-server.log 的占用进程，再删 .worktrees/self-supervision-mvp。

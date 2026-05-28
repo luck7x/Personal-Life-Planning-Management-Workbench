@@ -1,15 +1,13 @@
 {
   "status": "apply",
-  "dedupe_key": "eeb0b7680daf8f4f",
+  "dedupe_key": "f816799f86e61e01",
   "actions": [
     "progress: set focus",
+    "progress: set active_issues",
+    "progress: set blockers",
     "progress: set next3",
     "progress: append done",
     "progress: append notes",
-    "interaction-log: appended",
-    "kb KB-OPS-SYNC-WINDOWS-UTF8: set kb_pattern",
-    "kb KB-OPS-SYNC-WINDOWS-UTF8: set kb_root_cause",
-    "kb KB-OPS-SYNC-WINDOWS-UTF8: set kb_fix",
-    "kb KB-OPS-SYNC-WINDOWS-UTF8: set kb_precheck"
+    "interaction-log: appended"
   ]
 }

@@ -1,3 +1,15 @@
 *
 !.gitignore
 !README.md
+!AGENTS.md
+!TODO.md
+!frontend/
+!frontend/**
+frontend/node_modules/
+frontend/dist/
+!docs/
+!docs/prototypes/
+!docs/prototypes/mingxintai-2-mobile-sample.html
+!docs/superpowers/
+!docs/superpowers/specs/
+!docs/superpowers/specs/2026-05-28-mingxintai-2-mobile-first-redesign.md

@@ -518,6 +518,24 @@ def sync_workspace_entities(conn: sqlite3.Connection, state: dict[str, Any], upd
             ),
         )
 
+    for habit in as_dict_list(state.get("healthHabits")):
+        habit_id = str(habit.get("id") or "habit")
+        for index, record in enumerate(as_dict_list(habit.get("records"))):
+            record_id = str(record.get("id") or f"{habit_id}_{index}")
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO entity_health_records (id, kind, date, payload, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    record_id,
+                    f"habit:{habit_id}",
+                    str(record.get("date") or ""),
+                    json_compact({"habit": habit, "record": record}),
+                    updated_at,
+                ),
+            )
+
     review_daily = state.get("reviewDaily") if isinstance(state.get("reviewDaily"), dict) else {}
     for date_key, entry in (review_daily.get("entries") if isinstance(review_daily.get("entries"), dict) else {}).items():
         conn.execute(

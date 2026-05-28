@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>明心台 2.0 手机样例</title>
+  <style>
+    :root {
+      --bg: #eef2ef;
+      --surface: #fbfcf8;
+      --surface-2: #f3f6f0;
+      --ink: #17211d;
+      --muted: #66736d;
+      --line: #d9e0d8;
+      --green: #315f4c;
+      --green-soft: #dfeae3;
+      --blue: #355c7d;
+      --blue-soft: #dde8f2;
+      --rose: #9d4f4f;
+      --rose-soft: #f2dfdc;
+      --gold: #8b6f2f;
+      --gold-soft: #eee7cf;
+      --violet: #62507f;
+      --violet-soft: #e8e1ef;
+      --shadow: 0 24px 70px rgba(34, 48, 42, 0.18);
+      --radius: 18px;
+      --page-a: #e5ede6;
+      --page-b: #f4f6f0;
+      --page-glow: rgba(49, 95, 76, 0.10);
+      --hero: #15231d;
+      --hero-ink: #f5faf5;
+      --hero-muted: rgba(245, 250, 245, 0.72);
+      --hero-orb: rgba(173, 209, 185, 0.15);
+      --hero-button: #e7f0df;
+      --hero-button-ink: #15231d;
+      --tab-surface: rgba(251, 252, 248, 0.92);
+      font-family: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "Microsoft YaHei", serif;
+    }
+
+    body[data-theme="porcelain"] {
+      --bg: #edf6ff;
+      --surface: #fffefb;
+      --surface-2: #eef6ff;
+      --ink: #172047;
+      --muted: #69748f;
+      --line: #dbe4f4;
+      --green: #2d8f95;
+      --green-soft: #dff4f4;
+      --blue: #3459c7;
+      --blue-soft: #e1e8ff;
+      --rose: #c65d82;
+      --rose-soft: #f8e1eb;
+      --gold: #bf842b;
+      --gold-soft: #faedcc;
+      --violet: #775bc8;
+      --violet-soft: #ece5ff;
+      --page-a: #e8f4ff;
+      --page-b: #fffaf1;
+      --page-glow: rgba(52, 89, 199, 0.14);
+      --hero: #20326f;
+      --hero-ink: #fffaf1;
+      --hero-muted: rgba(255, 250, 241, 0.76);
+      --hero-orb: rgba(255, 217, 133, 0.22);
+      --hero-button: #ffe2a8;
+      --hero-button-ink: #20326f;
+      --tab-surface: rgba(255, 253, 248, 0.92);
+    }
+
+    body[data-theme="camellia"] {
+      --bg: #fff0ea;
+      --surface: #fffdfa;
+      --surface-2: #fff1ea;
+      --ink: #3d1721;
+      --muted: #846674;
+      --line: #f0d8d5;
+      --green: #3e8d72;
+      --green-soft: #e0f1e9;
+      --blue: #536fc4;
+      --blue-soft: #e4e9fb;
+      --rose: #c6415f;
+      --rose-soft: #f9dce4;
+      --gold: #c77a23;
+      --gold-soft: #fae9cd;
+      --violet: #9d4e9c;
+      --violet-soft: #f3e0f4;
+      --page-a: #ffe3db;
+      --page-b: #fff8ee;
+      --page-glow: rgba(198, 65, 95, 0.14);
+      --hero: #7a2038;
+      --hero-ink: #fff8ee;
+      --hero-muted: rgba(255, 248, 238, 0.76);
+      --hero-orb: rgba(255, 178, 117, 0.22);
+      --hero-button: #ffd6b3;
+      --hero-button-ink: #7a2038;
+      --tab-surface: rgba(255, 252, 246, 0.92);
+    }
+
+    body[data-theme="lake"] {
+      --bg: #eafffb;
+      --surface: #fbfffd;
+      --surface-2: #e7fbf8;
+      --ink: #082d38;
+      --muted: #5e7a7f;
+      --line: #ccebe7;
+      --green: #009b8d;
+      --green-soft: #d6f7f2;
+      --blue: #0c71b8;
+      --blue-soft: #dceffa;
+      --rose: #d1526b;
+      --rose-soft: #f9dfe5;
+      --gold: #c5901e;
+      --gold-soft: #f8edc8;
+      --violet: #6265cf;
+      --violet-soft: #e5e6ff;
+      --page-a: #dcfff7;
+      --page-b: #f4fffb;
+      --page-glow: rgba(0, 155, 141, 0.16);
+      --hero: #004e5e;
+      --hero-ink: #f6fffb;
+      --hero-muted: rgba(246, 255, 251, 0.76);
+      --hero-orb: rgba(130, 255, 226, 0.19);
+      --hero-button: #bdf7e8;
+      --hero-button-ink: #004e5e;
+      --tab-surface: rgba(251, 255, 251, 0.92);
+    }
+
+    body[data-theme="graphite"] {
+      --bg: #111421;
+      --surface: #1b2030;
+      --surface-2: #242a3d;
+      --ink: #f7f1e4;
+      --muted: #aeb6c9;
+      --line: #343c55;
+      --green: #77c8ae;
+      --green-soft: #263f3a;
+      --blue: #90b7ff;
+      --blue-soft: #263654;
+      --rose: #ff8da1;
+      --rose-soft: #53303b;
+      --gold: #e8bc69;
+      --gold-soft: #4a3a20;
+      --violet: #c5a0ff;
+      --violet-soft: #3e3359;
+      --page-a: #0f1320;
+      --page-b: #20283f;
+      --page-glow: rgba(144, 183, 255, 0.14);
+      --hero: #f2c66d;
+      --hero-ink: #151725;
+      --hero-muted: rgba(21, 23, 37, 0.68);
+      --hero-orb: rgba(21, 23, 37, 0.11);
+      --hero-button: #151725;
+      --hero-button-ink: #f2c66d;
+      --tab-surface: rgba(27, 32, 48, 0.92);
+    }
+
+    body[data-theme="ink"] {
+      --bg: #fbf7ef;
+      --surface: #fffdfa;
+      --surface-2: #f3efe5;
+      --ink: #14151a;
+      --muted: #696b74;
+      --line: #dfd8c9;
+      --green: #315b52;
+      --green-soft: #dfeae4;
+      --blue: #2d5b9a;
+      --blue-soft: #dfe9f8;
+      --rose: #b23a48;
+      --rose-soft: #f4dce0;
+      --gold: #b88714;
+      --gold-soft: #f5e9c7;
+      --violet: #60489b;
+      --violet-soft: #e8e1f6;
+      --page-a: #efe9dc;
+      --page-b: #fffdf7;
+      --page-glow: rgba(178, 58, 72, 0.10);
+      --hero: #11141d;
+      --hero-ink: #fff8e8;
+      --hero-muted: rgba(255, 248, 232, 0.74);
+      --hero-orb: rgba(184, 135, 20, 0.18);
+      --hero-button: #f0c65b;
+      --hero-button-ink: #11141d;
+      --tab-surface: rgba(255, 253, 250, 0.92);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 14% 10%, var(--page-glow), transparent 34%),
+        linear-gradient(135deg, var(--page-a), var(--page-b) 42%, var(--bg));
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .stage {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 30px;
+    }
+
+    .phone {
+      width: min(100%, 430px);
+      height: min(900px, calc(100vh - 32px));
+      min-height: 720px;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(23, 33, 29, 0.1);
+      border-radius: 34px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+    }
+
+    .app {
+      height: 100%;
+      overflow-y: auto;
+      padding: 22px 18px 106px;
+      scrollbar-width: none;
+    }
+
+    .app::-webkit-scrollbar {
+      display: none;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 16px;
+    }
+
+    .kicker {
+      margin: 0 0 5px;
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.12;
+      letter-spacing: 0;
+      font-weight: 800;
+    }
+
+    .sync-pill {
+      min-width: 74px;
+      padding: 8px 10px;
+      border-radius: 999px;
+      color: var(--hero-ink);
+      background: var(--green);
+      font-size: 12px;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .theme-rail {
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: max-content;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 2px 0 12px;
+      margin: -2px 0 2px;
+      scrollbar-width: none;
+    }
+
+    .theme-rail::-webkit-scrollbar {
+      display: none;
+    }
+
+    .theme-choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 34px;
+      padding: 6px 9px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: var(--surface);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .theme-choice.active {
+      color: var(--hero-ink);
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .swatches {
+      display: inline-flex;
+      gap: 2px;
+    }
+
+    .swatches i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: block;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .now-panel {
+      position: relative;
+      padding: 16px;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--surface), var(--surface-2));
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-left: 5px solid var(--gold);
+      box-shadow: 0 10px 28px rgba(30, 35, 42, 0.08);
+      overflow: hidden;
+      margin-bottom: 14px;
+    }
+
+    .now-panel::after {
+      content: "";
+      position: absolute;
+      inset: auto -30px -55px auto;
+      width: 150px;
+      height: 150px;
+      border-radius: 50%;
+      background: var(--gold-soft);
+      opacity: 0.72;
+    }
+
+    .now-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .now-title strong {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .timer {
+      font-family: "Courier New", monospace;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--green);
+    }
+
+    .now-meta {
+      position: relative;
+      z-index: 1;
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .now-actions {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .solid-btn,
+    .ghost-btn {
+      min-height: 42px;
+      border-radius: 13px;
+      font-weight: 700;
+    }
+
+    .solid-btn {
+      background: var(--hero-button);
+      color: var(--hero-button-ink);
+    }
+
+    .ghost-btn {
+      background: rgba(255, 255, 255, 0.62);
+      color: var(--ink);
+      border: 1px solid var(--line);
+    }
+
+    .section {
+      margin-top: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin: 0 2px 9px;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .section-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .item {
+      display: grid;
+      grid-template-columns: 4px 1fr auto;
+      gap: 12px;
+      align-items: stretch;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(30, 45, 39, 0.05);
+    }
+
+    .item.accent-memo { --accent: var(--gold); --soft: var(--gold-soft); }
+    .item.accent-today { --accent: var(--green); --soft: var(--green-soft); }
+    .item.accent-future { --accent: var(--blue); --soft: var(--blue-soft); }
+    .item.accent-idea { --accent: var(--violet); --soft: var(--violet-soft); }
+    .item.accent-late { --accent: var(--rose); --soft: var(--rose-soft); }
+
+    .stripe {
+      border-radius: 999px;
+      background: var(--accent);
+    }
+
+    .item-main {
+      min-width: 0;
+    }
+
+    .item-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.35;
+      font-weight: 800;
+    }
+
+    .handle {
+      width: 18px;
+      flex: 0 0 18px;
+      color: #96a39c;
+      font-family: "Courier New", monospace;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .item-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.2;
+    }
+
+    .tag {
+      padding: 4px 7px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .mini-action {
+      align-self: center;
+      min-width: 50px;
+      min-height: 34px;
+      padding: 0 10px;
+      border-radius: 12px;
+      color: #f7fbf7;
+      background: var(--accent);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 9px;
+      padding: 12px;
+      border-radius: var(--radius);
+      background: var(--surface-2);
+      border: 1px solid var(--line);
+    }
+
+    .time-row {
+      display: grid;
+      grid-template-columns: 48px 1fr;
+      align-items: center;
+      gap: 9px;
+      min-height: 34px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .time-block {
+      min-height: 34px;
+      display: flex;
+      align-items: center;
+      padding: 7px 10px;
+      border-radius: 12px;
+      color: #13221c;
+      background: rgba(49, 95, 76, 0.16);
+      border-left: 4px solid var(--green);
+      font-weight: 700;
+    }
+
+    .time-block.rest {
+      background: rgba(139, 111, 47, 0.17);
+      border-left-color: var(--gold);
+    }
+
+    .grid-two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 13px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+    }
+
+    .metric b {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 17px;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .fab {
+      position: absolute;
+      right: 18px;
+      bottom: 78px;
+      z-index: 8;
+      width: 58px;
+      height: 58px;
+      border-radius: 22px;
+      background: #17211d;
+      color: #f9fbf7;
+      box-shadow: 0 16px 34px rgba(23, 33, 29, 0.24);
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .tabbar {
+      position: absolute;
+      left: 13px;
+      right: 13px;
+      bottom: 12px;
+      z-index: 7;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 5px;
+      padding: 8px;
+      border: 1px solid rgba(23, 33, 29, 0.09);
+      border-radius: 24px;
+      background: var(--tab-surface);
+      box-shadow: 0 14px 34px rgba(26, 38, 33, 0.12);
+      backdrop-filter: blur(16px);
+    }
+
+    .tab {
+      min-height: 42px;
+      border-radius: 16px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tab.active {
+      color: #f8fbf7;
+      background: var(--green);
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .sheet-mask {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      align-items: end;
+      background: rgba(17, 25, 21, 0.28);
+      padding: 16px;
+    }
+
+    .sheet-mask.show {
+      display: flex;
+    }
+
+    .sheet {
+      width: 100%;
+      border-radius: 24px;
+      padding: 16px;
+      background: var(--surface);
+      box-shadow: 0 -18px 50px rgba(18, 29, 24, 0.18);
+    }
+
+    .sheet h3 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px 12px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    .sheet-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .sheet-actions button {
+      min-height: 44px;
+      border-radius: 14px;
+      font-weight: 800;
+    }
+
+    .cancel {
+      color: var(--ink);
+      background: var(--surface-2);
+    }
+
+    .save {
+      color: #f7fbf7;
+      background: var(--green);
+    }
+
+    .project-card,
+    .review-card,
+    .health-card {
+      padding: 15px;
+      border-radius: var(--radius);
+      border: 1px solid var(--line);
+      background: var(--surface);
+      margin-bottom: 10px;
+    }
+
+    .project-card h3,
+    .review-card h3,
+    .health-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+
+    .project-card p,
+    .review-card p,
+    .health-card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .markdown-box {
+      width: 100%;
+      min-height: 160px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: #fff;
+      color: var(--ink);
+      line-height: 1.6;
+      outline: none;
+    }
+
+    .markdown-preview {
+      margin-top: 10px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, var(--surface), var(--surface-2));
+      color: var(--ink);
+      line-height: 1.68;
+    }
+
+    .markdown-preview:empty::before {
+      content: "这里会实时显示渲染结果";
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .markdown-preview h2,
+    .markdown-preview h3 {
+      margin: 0 0 8px;
+      line-height: 1.3;
+    }
+
+    .markdown-preview h2 {
+      font-size: 18px;
+    }
+
+    .markdown-preview h3 {
+      font-size: 16px;
+    }
+
+    .markdown-preview p {
+      margin: 8px 0;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .markdown-preview ul {
+      margin: 8px 0 0;
+      padding-left: 20px;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .markdown-preview li {
+      margin: 5px 0;
+    }
+
+    @media (max-width: 520px) {
+      .stage {
+        padding: 0;
+      }
+
+      .phone {
+        width: 100%;
+        height: 100vh;
+        min-height: 100vh;
+        border-radius: 0;
+        border: 0;
+      }
+
+      .app {
+        padding-top: calc(18px + env(safe-area-inset-top));
+      }
+    }
+  </style>
+</head>
+<body data-theme="ink">
+  <main class="stage">
+    <section class="phone" aria-label="明心台 2.0 手机样例">
+      <div class="app">
+        <section class="view active" data-view="today">
+          <header class="topbar">
+            <div>
+              <p class="kicker">2026-05-28 · 周四</p>
+              <h1>今天先安顿下来</h1>
+            </div>
+            <div class="sync-pill">已同步</div>
+          </header>
+
+          <div class="theme-rail" aria-label="配色选择">
+            <button class="theme-choice" type="button" data-theme="porcelain">
+              <span class="swatches"><i style="background:#20326f"></i><i style="background:#ffe2a8"></i><i style="background:#2d8f95"></i></span>
+              白瓷雾蓝
+            </button>
+            <button class="theme-choice" type="button" data-theme="camellia">
+              <span class="swatches"><i style="background:#7a2038"></i><i style="background:#ffd6b3"></i><i style="background:#3e8d72"></i></span>
+              山茶赤陶
+            </button>
+            <button class="theme-choice" type="button" data-theme="lake">
+              <span class="swatches"><i style="background:#004e5e"></i><i style="background:#bdf7e8"></i><i style="background:#0c71b8"></i></span>
+              湖水青绿
+            </button>
+            <button class="theme-choice" type="button" data-theme="graphite">
+              <span class="swatches"><i style="background:#111421"></i><i style="background:#f2c66d"></i><i style="background:#90b7ff"></i></span>
+              夜航石墨
+            </button>
+            <button class="theme-choice active" type="button" data-theme="ink">
+              <span class="swatches"><i style="background:#11141d"></i><i style="background:#f0c65b"></i><i style="background:#b23a48"></i></span>
+              纸墨金章
+            </button>
+          </div>
+
+          <section class="now-panel">
+            <div class="now-title">
+              <strong>正在专注：明心台 2.0 首页草图</strong>
+              <span class="timer" id="timer">24:18</span>
+            </div>
+            <p class="now-meta">预计 45 分钟 · 结束前 5 分钟提醒 · 归属：个人系统</p>
+            <div class="now-actions">
+              <button class="solid-btn" type="button">结束专注</button>
+              <button class="ghost-btn" type="button">一键休息</button>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <h2>备忘</h2>
+              <span>轻提醒，不压迫</span>
+            </div>
+            <div class="list">
+              <article class="item accent-memo">
+                <div class="stripe"></div>
+                <div class="item-main">
+                  <p class="item-title">晚上饭后取快递</p>
+                  <div class="item-meta">
+                    <span class="tag">19:30 提醒</span>
+                    <span>不进入逾期</span>
+                  </div>
+                </div>
+                <button class="mini-action" type="button">完成</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <h2>今日执行</h2>
+              <span>可拖拽排序</span>
+            </div>
+            <div class="list">
+              <article class="item accent-today">
+                <div class="stripe"></div>
+                <div class="item-main">
+                  <p class="item-title"><span class="handle">::</span>完成手机首页样例</p>
+                  <div class="item-meta">
+                    <span class="tag">个人系统</span>
+                    <span>2/4 子任务</span>
+                    <span>已专注 24 分钟</span>
+                  </div>
+                </div>
+                <button class="mini-action" type="button">专注</button>
+              </article>
+              <article class="item accent-today">
+                <div class="stripe"></div>
+                <div class="item-main">
+                  <p class="item-title"><span class="handle">::</span>整理导师项目材料</p>
+                  <div class="item-meta">
+                    <span class="tag">导师项目</span>
+                    <span>今日推进</span>
+                  </div>
+                </div>
+                <button class="mini-action" type="button">专注</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <h2>未来提醒</h2>
+              <span>只露出最近</span>
+            </div>
+            <div class="list">
+              <article class="item accent-future">
+                <div class="stripe"></div>
+                <div class="item-main">
+                  <p class="item-title">周三前交论文初稿</p>
+                  <div class="item-meta">
+                    <span class="tag">剩 2 天</span>
+                    <span>可明天开始</span>
+                  </div>
+                </div>
+                <button class="mini-action" type="button">排入</button>
+              </article>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-head">
+              <h2>今日时间线</h2>
+              <span>回顾用，不抢主线</span>
+            </div>
+            <div class="timeline">
+              <div class="time-row">
+                <span>09:00</span>
+                <div class="time-block">明心台 2.0 首页草图 · 45min</div>
+              </div>
+              <div class="time-row">
+                <span>10:00</span>
+                <div class="time-block rest">休息 · 15min</div>
+              </div>
+              <div class="time-row">
+                <span>10:30</span>
+                <div class="time-block">导师项目材料 · 60min</div>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="view" data-view="projects">
+          <header class="topbar">
+            <div>
+              <p class="kicker">长期目标</p>
+              <h1>项目不抢今天</h1>
+            </div>
+          </header>
+          <article class="project-card">
+            <h3>个人记录系统</h3>
+            <p>活跃任务 4 个，今日已排入 1 个。项目只负责承载长期上下文，不直接压到首页。</p>
+          </article>
+          <article class="project-card">
+            <h3>导师项目</h3>
+            <p>下一步：整理材料和本周沟通记录。可归档，归档后不进入日常干扰。</p>
+          </article>
+        </section>
+
+        <section class="view" data-view="review">
+          <header class="topbar">
+            <div>
+              <p class="kicker">日终回看</p>
+              <h1>今天如何度过</h1>
+            </div>
+          </header>
+          <div class="grid-two">
+            <div class="metric">
+              <b>2h 15m</b>
+              <span>今日专注</span>
+            </div>
+            <div class="metric">
+              <b>3 / 6</b>
+              <span>完成事项</span>
+            </div>
+          </div>
+          <section class="section">
+            <div class="section-head">
+              <h2>自动摘要</h2>
+              <span>系统生成</span>
+            </div>
+            <article class="review-card">
+              <h3>已完成</h3>
+              <p>完成手机首页样例、取快递提醒、整理项目入口。</p>
+            </article>
+            <article class="review-card">
+              <h3>仍未完成</h3>
+              <p>导师项目材料、论文初稿拆分、晚间运动。</p>
+            </article>
+          </section>
+          <section class="section">
+            <div class="section-head">
+              <h2>自由反思</h2>
+              <span>Markdown</span>
+            </div>
+            <textarea class="markdown-box" id="reflectionInput">## 今天的判断
+不要把工具做成负担。
+
+- 首页只保留今天需要看的东西
+- 项目放后面
+- 复盘由系统先帮我铺底</textarea>
+            <div class="markdown-preview" id="reflectionPreview" aria-live="polite"></div>
+          </section>
+        </section>
+
+        <section class="view" data-view="health">
+          <header class="topbar">
+            <div>
+              <p class="kicker">轻记录</p>
+              <h1>养息不审判</h1>
+            </div>
+          </header>
+          <article class="health-card">
+            <h3>睡眠</h3>
+            <p>00:40 - 08:10 · 7h30m</p>
+          </article>
+          <article class="health-card">
+            <h3>饮水</h3>
+            <p>250ml · 500ml · 300ml，共 1050ml</p>
+          </article>
+          <article class="health-card">
+            <h3>运动</h3>
+            <p>散步 20min，可继续添加多条记录。</p>
+          </article>
+        </section>
+
+        <section class="view" data-view="settings">
+          <header class="topbar">
+            <div>
+              <p class="kicker">低频配置</p>
+              <h1>让后台安静工作</h1>
+            </div>
+          </header>
+          <article class="project-card">
+            <h3>后端状态</h3>
+            <p>VPS 已连接 · 数据以后以后端为准，前端只保留临时状态。</p>
+          </article>
+          <article class="project-card">
+            <h3>通知</h3>
+            <p>WxPusher 可配置，任务默认提醒，也可单独关闭。</p>
+          </article>
+          <article class="project-card">
+            <h3>App 化</h3>
+            <p>PWA 稳定后，再用 Capacitor 打包 Android。</p>
+          </article>
+        </section>
+      </div>
+
+      <button class="fab" type="button" aria-label="快速添加" id="openSheet">+</button>
+
+      <nav class="tabbar" aria-label="主导航">
+        <button class="tab active" type="button" data-tab="today">今天</button>
+        <button class="tab" type="button" data-tab="projects">项目</button>
+        <button class="tab" type="button" data-tab="review">复盘</button>
+        <button class="tab" type="button" data-tab="health">养息</button>
+        <button class="tab" type="button" data-tab="settings">设置</button>
+      </nav>
+
+      <div class="sheet-mask" id="sheetMask">
+        <section class="sheet" role="dialog" aria-modal="true" aria-label="快速添加">
+          <h3>快速添加</h3>
+          <div class="field">
+            <label for="taskTitle">标题</label>
+            <input id="taskTitle" value="买衣服" />
+          </div>
+          <div class="field">
+            <label for="taskType">类型</label>
+            <select id="taskType">
+              <option>备忘</option>
+              <option>今日执行</option>
+              <option>未来待办</option>
+              <option>想法池</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="taskTime">提醒 / 截止</label>
+            <input id="taskTime" placeholder="可不填，例如 明天 18:00" />
+          </div>
+          <div class="sheet-actions">
+            <button class="cancel" type="button" id="closeSheet">取消</button>
+            <button class="save" type="button" id="saveSheet">加入今天</button>
+          </div>
+        </section>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const tabs = document.querySelectorAll(".tab");
+    const views = document.querySelectorAll(".view");
+    const sheetMask = document.getElementById("sheetMask");
+    const openSheet = document.getElementById("openSheet");
+    const closeSheet = document.getElementById("closeSheet");
+    const saveSheet = document.getElementById("saveSheet");
+    const timer = document.getElementById("timer");
+    const themeChoices = document.querySelectorAll(".theme-choice");
+    const searchParams = new URLSearchParams(window.location.search);
+    const initialTheme = searchParams.get("theme");
+    const initialView = searchParams.get("view");
+    const reflectionInput = document.getElementById("reflectionInput");
+    const reflectionPreview = document.getElementById("reflectionPreview");
+    let seconds = 24 * 60 + 18;
+
+    if (initialTheme && document.querySelector(`[data-theme="${initialTheme}"]`)) {
+      document.body.dataset.theme = initialTheme;
+      themeChoices.forEach((item) => item.classList.toggle("active", item.dataset.theme === initialTheme));
+    }
+
+    function setActiveView(target) {
+      tabs.forEach((item) => item.classList.toggle("active", item.dataset.tab === target));
+      views.forEach((view) => view.classList.toggle("active", view.dataset.view === target));
+    }
+
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => setActiveView(tab.dataset.tab));
+    });
+
+    if (initialView && document.querySelector(`[data-view="${initialView}"]`)) {
+      setActiveView(initialView);
+    }
+
+    openSheet.addEventListener("click", () => sheetMask.classList.add("show"));
+    closeSheet.addEventListener("click", () => sheetMask.classList.remove("show"));
+    saveSheet.addEventListener("click", () => sheetMask.classList.remove("show"));
+    sheetMask.addEventListener("click", (event) => {
+      if (event.target === sheetMask) sheetMask.classList.remove("show");
+    });
+
+    themeChoices.forEach((choice) => {
+      choice.addEventListener("click", () => {
+        document.body.dataset.theme = choice.dataset.theme;
+        themeChoices.forEach((item) => item.classList.toggle("active", item === choice));
+      });
+    });
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderInlineMarkdown(value) {
+      return escapeHtml(value)
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/\*(.+?)\*/g, "<em>$1</em>");
+    }
+
+    function renderMarkdown(value) {
+      const blocks = [];
+      const lines = value.split(/\r?\n/);
+      let listItems = [];
+
+      function flushList() {
+        if (listItems.length) {
+          blocks.push(`<ul>${listItems.map((item) => `<li>${renderInlineMarkdown(item)}</li>`).join("")}</ul>`);
+          listItems = [];
+        }
+      }
+
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (!trimmed) {
+          flushList();
+          return;
+        }
+        if (trimmed.startsWith("## ")) {
+          flushList();
+          blocks.push(`<h2>${renderInlineMarkdown(trimmed.slice(3))}</h2>`);
+          return;
+        }
+        if (trimmed.startsWith("### ")) {
+          flushList();
+          blocks.push(`<h3>${renderInlineMarkdown(trimmed.slice(4))}</h3>`);
+          return;
+        }
+        if (trimmed.startsWith("- ")) {
+          listItems.push(trimmed.slice(2));
+          return;
+        }
+        flushList();
+        blocks.push(`<p>${renderInlineMarkdown(trimmed)}</p>`);
+      });
+      flushList();
+      return blocks.join("");
+    }
+
+    function refreshReflectionPreview() {
+      reflectionPreview.innerHTML = renderMarkdown(reflectionInput.value);
+    }
+
+    reflectionInput.addEventListener("input", refreshReflectionPreview);
+    refreshReflectionPreview();
+
+    setInterval(() => {
+      seconds += 1;
+      const minute = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const second = String(seconds % 60).padStart(2, "0");
+      timer.textContent = `${minute}:${second}`;
+    }, 1000);
+  </script>
+</body>
+</html>

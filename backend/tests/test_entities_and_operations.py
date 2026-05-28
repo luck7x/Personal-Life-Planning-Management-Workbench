@@ -52,6 +52,13 @@ class EntityOperationTests(unittest.TestCase):
                 "weights": [{"id": "weight1", "date": "2026-05-16", "value": 70}],
                 "heights": [{"id": "height1", "date": "2026-05-16", "value": 175}],
                 "habits": {"entries": {"2026-05-16": {"habit_early_wake": {"start": "07:00", "end": "07:00"}}}},
+                "healthHabits": [
+                    {
+                        "id": "water",
+                        "title": "饮水",
+                        "records": [{"id": "water-ui-1", "date": "2026-05-16", "value": 250}],
+                    }
+                ],
                 "reviewDaily": {"entries": {"2026-05-16": {"markdown": "今天复盘"}}},
                 "care": {"entries": {"2026-05-16": {"lights": []}}},
                 "submissions": [{"id": "sub1", "title": "投稿", "stage": "选题中", "deadline": "2026-05-20"}],
@@ -66,7 +73,7 @@ class EntityOperationTests(unittest.TestCase):
         self.assertEqual(entities["counts"]["subtasks"], 1)
         self.assertEqual(entities["counts"]["focus_sessions"], 1)
         self.assertEqual(entities["counts"]["time_blocks"], 1)
-        self.assertEqual(entities["counts"]["health_records"], 5)
+        self.assertEqual(entities["counts"]["health_records"], 6)
         self.assertEqual(entities["counts"]["daily_reviews"], 1)
         self.assertEqual(entities["counts"]["care_entries"], 1)
         self.assertEqual(entities["counts"]["submissions"], 1)
@@ -192,6 +199,37 @@ class EntityOperationTests(unittest.TestCase):
         self.assertEqual(context["today_tasks"][0]["id"], "today")
         self.assertEqual(context["projects"][0]["id"], "p1")
         self.assertGreaterEqual(context["focus"]["minutes"], 30)
+
+    def test_reminder_scan_reads_frontend_notification_settings(self):
+        main.write_workspace_state_with_snapshot(
+            {
+                "notificationSettings": {
+                    "enabled": True,
+                    "wxpusherSpt": "SPT_TEST",
+                    "taskLeadMinutes": 1440,
+                    "leadMinutes": 1440,
+                    "taskAtDue": True,
+                    "atDue": True,
+                    "taskOverdue": True,
+                    "overdue": True,
+                },
+                "tasks": [
+                    {
+                        "id": "remind-me",
+                        "title": "提醒任务",
+                        "lane": "future",
+                        "status": "todo",
+                        "dueDate": datetime.now(ZoneInfo("Asia/Shanghai")).date().isoformat(),
+                    }
+                ],
+            },
+            reason="reminder-frontend-settings",
+        )
+
+        result = main.scan_reminders(main.ReminderScanIn(soon_hours=24, dry_run=True))
+
+        self.assertGreaterEqual(result["total_candidates"], 1)
+        self.assertEqual(result["pending"][0]["task_id"], "remind-me")
 
 
 if __name__ == "__main__":

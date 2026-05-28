@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="明心台">
+  <rect width="192" height="192" rx="44" fill="#11141d"/>
+  <path d="M48 122c27-3 56-16 82-52" fill="none" stroke="#f0c65b" stroke-width="15" stroke-linecap="round"/>
+  <path d="M59 67c20 8 38 8 58 0" fill="none" stroke="#fff8e8" stroke-width="13" stroke-linecap="round"/>
+  <circle cx="135" cy="127" r="16" fill="#b23a48"/>
+</svg>

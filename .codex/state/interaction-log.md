@@ -88,3 +88,10 @@
 - **Source**: codex-inline-execution
 - **Result**: 先按 TDD 为 `rolloverTasks()` 与 `bootstrap()` 补了 `Done -> Archived` 跨日本地日自动流转测试，确认失败后在 `app.js` 中把 done 自动归档并入现有 rollover 链；定向验证 `npm test -- tests/rollover-calendar.test.js tests/task-view-dom.test.js` 共 `34/34` 通过。同时保留 `.gitignore` 的最新环境规则 `.ace-tool/`，并完成分支规范化：当前唯一正式开发分支改为 `feature/self-supervision-mvp`，旧脏现场与 clean 临时分支分别归档为 `archive/feature-self-supervision-mvp-dirty-20260417` 和 `archive/feature-archive-task1-clean`。
 - **Tags**: rollover, archive, tdd, branch-governance, git, state-sync
+
+## [2026-04-17 14:42] 同步本轮分支治理结果：删除其他项目分支、重置 main 为占位分支，并确认 feature/self-supervision-mvp 为唯一 MVP 主力开发分支。
+<!-- dedupe:f816799f86e61e01 -->
+- **Source**: ops-judge
+- **Result**: 已先对 main 与两个归档分支的未提交现场各做一次归档提交，再删除两个归档分支及其 Git worktree 绑定；main 现仅保留 README.md 与 .gitignore 作为占位分支，feature/self-supervision-mvp 保持为唯一正式开发分支，最新提交为 409fbc0。另保留 archive-feature-archive-task1-clean-20260417 与 archive-feature-self-supervision-mvp-dirty-20260417 两个 tag 作为已删分支的历史锚点；当前仅剩 .worktrees/self-supervision-mvp 物理目录因 qa-http-server.log 被占用未删净。
+- **Tags**: branch-governance, git, main, worktree, state-sync
+- **Links**: ISSUE-2026-04-17-branch-governance
