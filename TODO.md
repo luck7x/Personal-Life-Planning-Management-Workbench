@@ -137,6 +137,7 @@
    - 已保留旧版 `/mingxintai.html`，新版 2.0 灰度部署到 `/v2/`。
    - VPS Node 当前为 18，不能稳定承载 Vite 7 本机构建；本轮采用本机已验证的 `frontend/dist` 上传部署，后续如要在 VPS 直接构建需升级 Node 到 20.19+ 或 22.12+。
    - 验证：`https://mingxin.787602.xyz/v2/` Basic Auth 后返回 200；`/api/health` 返回 ok；`mingxintai` 与 `mingxintai-reminders.timer` 均 active；reminder dry-run 返回 ok。
+   - 修复：2026-05-28 发现 `/v2/` 空白页根因是 Vite 构建资源使用根路径 `/assets/...`，已改为相对路径并重新上传；Playwright 线上验证首页标题和控件可见，控制台无错误。
 
 11. [x] 评估 Capacitor Android 打包
     - 前提：PWA 主流程稳定。
