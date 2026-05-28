@@ -130,10 +130,13 @@
    - [x] 9.5 后台提醒灰度：VPS 定时扫描可读取 2.0 写入后端的通知配置，浏览器关闭时也能基于后端状态推送。
    - 验证：新增 Playwright 用例覆盖后端状态恢复、修改后自动保存、复盘/养息恢复；新增后端用例覆盖 reminder scan 读取前端通知配置；`npm run lint`、`npm run build`、`npm run test:e2e`、`PYTHONPATH=backend python -m unittest discover -s backend/tests` 均通过。
 
-10. [~] VPS 灰度部署
+10. [x] VPS 灰度部署
    - 保留旧版可访问。
    - 新版独立路径灰度验证。
-   - 本地已完成生产构建；待推送 GitHub 后在 VPS 拉取并切换部署目录。
+   - 已推送 GitHub 分支 `codex/mingxintai-backend-api`，VPS `/opt/mingxintai` 已切到提交 `38d9315`。
+   - 已保留旧版 `/mingxintai.html`，新版 2.0 灰度部署到 `/v2/`。
+   - VPS Node 当前为 18，不能稳定承载 Vite 7 本机构建；本轮采用本机已验证的 `frontend/dist` 上传部署，后续如要在 VPS 直接构建需升级 Node 到 20.19+ 或 22.12+。
+   - 验证：`https://mingxin.787602.xyz/v2/` Basic Auth 后返回 200；`/api/health` 返回 ok；`mingxintai` 与 `mingxintai-reminders.timer` 均 active；reminder dry-run 返回 ok。
 
 11. [x] 评估 Capacitor Android 打包
     - 前提：PWA 主流程稳定。
