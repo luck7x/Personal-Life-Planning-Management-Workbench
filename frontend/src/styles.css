@@ -878,6 +878,40 @@ body[data-theme="graphite"] {
     margin-bottom: 10px;
   }
 
+  .project-card.archived {
+    border-style: dashed;
+    background: color-mix(in srgb, var(--surface-2) 72%, var(--surface));
+  }
+
+  .project-card-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+
+  .project-card-head h3 {
+    margin: 0;
+    min-width: 0;
+  }
+
+  .ghost-button {
+    min-height: 34px;
+    padding: 0 12px;
+    flex: 0 0 auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    color: var(--muted);
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .ghost-button:active {
+    transform: translateY(1px);
+  }
+
   .project-form {
     padding: 14px;
     border: 1px solid var(--line);
@@ -1442,7 +1476,7 @@ body[data-theme="graphite"] {
     line-height: 1.35;
   }
 
-  .project-card h3,
+  .project-card > h3,
   .review-card h3,
   .health-card h3 {
     margin: 0 0 8px;

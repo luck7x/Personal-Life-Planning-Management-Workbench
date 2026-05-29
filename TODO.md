@@ -144,6 +144,12 @@
     - 准备：Android Studio、Android SDK、Node.js、App 图标、包名、签名密钥。
     - 结论：当前先作为 PWA 上线更稳；等后端权威数据、通知后台和移动端主流程稳定后，再进入 Capacitor 打包。Android 15 适配主要准备包名、图标、签名密钥、通知权限和 WebView 兼容测试，不应在当前阶段抢主线。
 
+12. [x] 修复周历事件来源与项目归档
+    - 背景：用户反馈“今天啥也没干”但周历仍出现之前 / 默认时间块，备忘也被渲染到周历；项目页缺少归档功能。
+    - 验收：周历不再用默认任务兜底生成时间块；备忘不自动进入周历；完成记录、专注块、休息块必须按真实日期显示；项目可归档并可恢复，归档项目不再占据活跃项目列表。
+    - 已实现：周历任务块只展示非备忘且有明确开始时间的任务；完成记录、专注块、休息块带真实日期；后端空状态不再回退展示示例任务；项目页支持归档和恢复，归档项目不再占据活跃项目列表和新任务项目选择。
+    - 验证：已补 Playwright 回归用例；`npm run lint`、`npm run build`、`npm run test:e2e` 均通过；已用 Playwright 真实浏览器脚本验证周历过滤和项目归档 / 恢复，并输出截图 `frontend/docs/prototypes/mingxintai-2-week-filter-qa-390.png`、`frontend/docs/prototypes/mingxintai-2-project-archive-qa-390.png`。
+
 ## 硬约束
 
 - 不为了系统完整而加功能。

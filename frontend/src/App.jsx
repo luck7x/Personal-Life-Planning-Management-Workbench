@@ -222,12 +222,32 @@ function normalizeWorkspaceTask(task, projects = defaultProjects) {
   };
 }
 
+function normalizeWorkspaceProject(project) {
+  return {
+    ...project,
+    archived: Boolean(project.archived),
+    archivedAt: project.archivedAt || ""
+  };
+}
+
 function defaultHealthState() {
   return defaultHealthHabits.map((habit) => ({ ...habit, records: [] }));
 }
 
 function workspaceTodayKey() {
   return formatDateValue(new Date());
+}
+
+function inferDateFromId(id) {
+  const match = String(id || "").match(/(\d{12,})$/);
+  if (!match) return "";
+  const timestamp = Number(match[1]);
+  if (!Number.isFinite(timestamp)) return "";
+  return formatDateValue(new Date(timestamp));
+}
+
+function entityDate(entity, fallbackDate = "") {
+  return entity?.date || entity?.createdDate || inferDateFromId(entity?.id) || fallbackDate;
 }
 
 function restoreTimestamp(value, fallback = Date.now()) {
@@ -282,7 +302,7 @@ function workspaceStateFromApp({
           title: record.title,
           taskId: record.itemId,
           subtaskId: record.subtaskId || "",
-          date: todayKey,
+          date: entityDate(record, todayKey),
           start: record.startedClock,
           end: record.endedClock,
           minutes: Math.max(1, Math.round(record.durationSeconds / 60))
@@ -330,8 +350,10 @@ function getElapsedSeconds(startedAt, tick) {
 }
 
 function makeFocusBlock(focus, elapsedSeconds, { id, endedClock, live = false }) {
+  const date = focus.date || workspaceTodayKey();
   return {
     id,
+    date,
     start: focus.startedClock,
     title: live ? `正在专注：${focus.title}` : `${focus.title}（至 ${endedClock}）`,
     duration: formatMinutes(elapsedSeconds),
@@ -342,8 +364,10 @@ function makeFocusBlock(focus, elapsedSeconds, { id, endedClock, live = false })
 }
 
 function makeRestBlock(rest, elapsedSeconds, { id, live = false }) {
+  const date = rest.date || workspaceTodayKey();
   return {
     id,
+    date,
     start: rest.startedClock,
     title: live ? "休息中" : "休息",
     duration: formatMinutes(elapsedSeconds),
@@ -544,8 +568,9 @@ function buildWeekDays() {
 }
 
 function taskBelongsToDate(task, dateText, isToday) {
+  if (task.tone === "memo" || !task.startTime) return false;
   if (task.planDate === dateText || task.dueDate === dateText) return true;
-  return isToday && ["memo", "today", "done"].includes(task.tone) && !task.planDate && !task.dueDate;
+  return isToday && ["today", "done"].includes(task.tone) && !task.planDate && !task.dueDate;
 }
 
 function eventDurationMinutes(start, end) {
@@ -560,7 +585,7 @@ function clampNumber(value, min, max) {
 }
 
 function buildWeekEvents(items, completedRecords, timelineBlocks, weekBlocks, weekDays) {
-  const todayText = formatDateValue(new Date());
+  const weekDateSet = new Set(weekDays.map((day) => day.dateText));
   const completedTaskIds = new Set(completedRecords.map((record) => record.itemId));
   const taskEvents = weekDays.flatMap((day) => (
     items
@@ -584,28 +609,38 @@ function buildWeekEvents(items, completedRecords, timelineBlocks, weekBlocks, we
   ));
   const recordEvents = completedRecords
     .filter((record) => record.durationSeconds > 0)
-    .map((record) => ({
-      id: `record-week-${record.id}`,
-      date: todayText,
-      title: record.parentTitle ? `${record.parentTitle} / ${record.title}` : record.title,
-      start: record.startedClock,
-      end: record.endedClock,
-      tone: "done",
-      completed: true,
-      meta: formatHumanDuration(record.durationSeconds)
-    }));
+    .map((record) => {
+      const date = entityDate(record);
+      if (!weekDateSet.has(date)) return null;
+      return {
+        id: `record-week-${record.id}`,
+        date,
+        title: record.parentTitle ? `${record.parentTitle} / ${record.title}` : record.title,
+        start: record.startedClock,
+        end: record.endedClock,
+        tone: "done",
+        completed: true,
+        meta: formatHumanDuration(record.durationSeconds)
+      };
+    })
+    .filter(Boolean);
   const timelineEvents = timelineBlocks
     .filter((block) => block.start && block.durationSeconds)
-    .map((block) => ({
-      id: `timeline-week-${block.id}`,
-      date: todayText,
-      title: block.title,
-      start: block.start,
-      end: addMinutesToTime(block.start, Math.max(1, Math.round((block.durationSeconds || 0) / 60))),
-      tone: block.type === "rest" ? "memo" : "today",
-      completed: false,
-      meta: block.duration
-    }));
+    .map((block) => {
+      const date = entityDate(block);
+      if (!weekDateSet.has(date)) return null;
+      return {
+        id: `timeline-week-${block.id}`,
+        date,
+        title: block.title,
+        start: block.start,
+        end: addMinutesToTime(block.start, Math.max(1, Math.round((block.durationSeconds || 0) / 60))),
+        tone: block.type === "rest" ? "memo" : "today",
+        completed: false,
+        meta: block.duration
+      };
+    })
+    .filter(Boolean);
 
   const baseEvents = [...taskEvents, ...recordEvents, ...timelineEvents];
   const overrideMap = new Map(weekBlocks.map((block) => [block.id, block]));
@@ -946,6 +981,7 @@ function TodayView({
 
 function WeekView({ items, completedRecords, timelineBlocks }) {
   const weekDays = useMemo(() => buildWeekDays(), []);
+  const weekDateSet = useMemo(() => new Set(weekDays.map((day) => day.dateText)), [weekDays]);
   const timelineRef = useRef(null);
   const [weekBlocks, setWeekBlocks] = useState([]);
   const [editingBlock, setEditingBlock] = useState(null);
@@ -953,6 +989,10 @@ function WeekView({ items, completedRecords, timelineBlocks }) {
   const weekEvents = useMemo(
     () => buildWeekEvents(items, completedRecords, timelineBlocks, weekBlocks, weekDays),
     [items, completedRecords, timelineBlocks, weekBlocks, weekDays]
+  );
+  const weeklyCompletedRecords = useMemo(
+    () => completedRecords.filter((record) => weekDateSet.has(entityDate(record))),
+    [completedRecords, weekDateSet]
   );
 
   useEffect(() => {
@@ -984,7 +1024,7 @@ function WeekView({ items, completedRecords, timelineBlocks }) {
         title="流光周历"
         right={<button className="top-action" type="button" onClick={() => { setEditingBlock(null); setSheetOpen(true); }}>补录时间块</button>}
       />
-      <Section title="这一周怎么过" hint={`本周完成 ${completedRecords.length} 项`}>
+      <Section title="这一周怎么过" hint={`本周完成 ${weeklyCompletedRecords.length} 项`}>
         <div className="week-timeline-shell" ref={timelineRef}>
           <div className="week-timeline-head">
             <span />
@@ -1042,7 +1082,7 @@ function WeekView({ items, completedRecords, timelineBlocks }) {
       </Section>
       <Section title="本周完成" hint="来自专注结束或手动勾选">
         <SummaryList
-          items={completedRecords.map((record) => ({
+          items={weeklyCompletedRecords.map((record) => ({
             id: record.id,
             title: record.parentTitle ? `${record.parentTitle} / ${record.title}` : record.title,
             detail: `${record.startedClock} - ${record.endedClock} · ${formatHumanDuration(record.durationSeconds)}`
@@ -1101,11 +1141,13 @@ function TaskBoard({ tasks, onOpenTask }) {
   );
 }
 
-function ProjectsView({ projects, items, onCreateProject, onOpenTask }) {
+function ProjectsView({ projects, items, onCreateProject, onArchiveProject, onRestoreProject, onOpenTask }) {
   const [adding, setAdding] = useState(false);
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const visibleTasks = items.filter((item) => item.tone !== "done");
+  const activeProjects = projects.filter((project) => !project.archived);
+  const archivedProjects = projects.filter((project) => project.archived);
 
   function handleSubmit(event) {
     event.preventDefault();
@@ -1144,14 +1186,31 @@ function ProjectsView({ projects, items, onCreateProject, onOpenTask }) {
         </form>
       )}
       <Section title="项目任务" hint="按项目收拢">
-        {projects.map((project) => (
+        {activeProjects.map((project) => (
           <article className="project-card" key={project.id} data-project-tasks={project.id}>
-            <h3>{project.title}</h3>
+            <div className="project-card-head">
+              <h3>{project.title}</h3>
+              <button className="ghost-button" type="button" onClick={() => onArchiveProject(project.id)}>归档</button>
+            </div>
             <p>{project.note}</p>
             <ProjectTaskList tasks={items.filter((item) => item.projectId === project.id)} onOpenTask={onOpenTask} />
           </article>
         ))}
+        {!activeProjects.length && <p className="empty-note">活跃项目都已收起，需要时可从已归档项目恢复。</p>}
       </Section>
+      {archivedProjects.length > 0 && (
+        <Section title="已归档项目" hint="收起长期上下文，不删除任务">
+          {archivedProjects.map((project) => (
+            <article className="project-card archived" key={project.id} data-archived-project={project.id}>
+              <div className="project-card-head">
+                <h3>{project.title}</h3>
+                <button className="ghost-button" type="button" onClick={() => onRestoreProject(project.id)}>恢复</button>
+              </div>
+              <p>{project.note}</p>
+            </article>
+          ))}
+        </Section>
+      )}
       <Section title="全部代办" hint="按分区轻管理">
         <TaskBoard tasks={visibleTasks} onOpenTask={onOpenTask} />
       </Section>
@@ -2228,7 +2287,9 @@ export default function App() {
   const applyWorkspaceState = useCallback((workspace) => {
     if (!hasWorkspacePayload(workspace)) return false;
     hydratingRef.current = true;
-    const nextProjects = Array.isArray(workspace.projects) && workspace.projects.length ? workspace.projects : defaultProjects;
+    const nextProjects = Array.isArray(workspace.projects)
+      ? workspace.projects.map(normalizeWorkspaceProject)
+      : defaultProjects.map(normalizeWorkspaceProject);
     const todayKey = workspaceTodayKey();
     const timeBlocks = workspace.timeBlocks && typeof workspace.timeBlocks === "object" ? workspace.timeBlocks : {};
     const reviewEntries = workspace.reviewDaily?.entries && typeof workspace.reviewDaily.entries === "object"
@@ -2248,7 +2309,7 @@ export default function App() {
       : null;
 
     setProjects(nextProjects);
-    setItems(Array.isArray(workspace.tasks) && workspace.tasks.length
+    setItems(Array.isArray(workspace.tasks)
       ? workspace.tasks.map((task) => normalizeWorkspaceTask(task, nextProjects))
       : todayItems.map((task) => normalizeWorkspaceTask(task, nextProjects)));
     setTimelineBlocks(Array.isArray(timeBlocks[todayKey]) ? timeBlocks[todayKey] : []);
@@ -2549,9 +2610,24 @@ export default function App() {
       {
         id: `project-${Date.now()}`,
         title,
-        note
+        note,
+        archived: false,
+        archivedAt: ""
       }
     ]);
+  }
+
+  function archiveProject(projectId) {
+    const now = new Date().toISOString();
+    setProjects((currentProjects) => currentProjects.map((project) => (
+      project.id === projectId ? { ...project, archived: true, archivedAt: now } : project
+    )));
+  }
+
+  function restoreProject(projectId) {
+    setProjects((currentProjects) => currentProjects.map((project) => (
+      project.id === projectId ? { ...project, archived: false, archivedAt: "" } : project
+    )));
   }
 
   function updateTask(taskId, changes) {
@@ -2649,6 +2725,7 @@ export default function App() {
         parentTitle: "",
         startedClock: completedClock,
         endedClock: completedClock,
+        date: workspaceTodayKey(),
         durationSeconds: 0
       }
     ]);
@@ -2708,6 +2785,7 @@ export default function App() {
           parentTitle: "",
           startedClock: completedClock,
           endedClock: completedClock,
+          date: workspaceTodayKey(),
           durationSeconds: 0
         }
       ]);
@@ -2729,6 +2807,7 @@ export default function App() {
       subtaskId: focusTarget.subtask?.id || null,
       title: focusTitle,
       parentTitle: focusTarget.subtask ? focusTarget.item.title : "",
+      date: workspaceTodayKey(),
       expectedMinutes: expected,
       notifyBeforeMinutes: notifyBefore,
       startedAt: now,
@@ -2765,6 +2844,7 @@ export default function App() {
       parentTitle: endingFocus.parentTitle,
       startedClock: endingFocus.sessionStartedClock || endingFocus.startedClock,
       endedClock: actualEndTime,
+      date: workspaceTodayKey(),
       durationSeconds: totalSeconds
     };
     setTimelineBlocks((blocks) => [
@@ -2798,6 +2878,7 @@ export default function App() {
     ]);
     setActiveRest({
       id: `rest-${now}`,
+      date: workspaceTodayKey(),
       plannedMinutes,
       startedAt: now,
       startedClock: restStartClock,
@@ -2860,6 +2941,8 @@ export default function App() {
               syncStatus={syncStatus}
               onMoveTodayItem={moveTodayItem}
               onCreateProject={createProject}
+              onArchiveProject={archiveProject}
+              onRestoreProject={restoreProject}
               onStartFocus={setFocusTarget}
               onOpenTask={setSelectedTaskId}
               onCompleteTask={completeTask}
@@ -2897,13 +2980,13 @@ export default function App() {
           open={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onCreate={createTask}
-          projects={projects}
+          projects={projects.filter((project) => !project.archived)}
           notificationSettings={notificationSettings}
         />
         <TaskDetailSheet
           key={selectedTask?.id || "closed-task-detail"}
           task={selectedTask}
-          projects={projects}
+          projects={projects.filter((project) => !project.archived || project.id === selectedTask?.projectId)}
           project={selectedTaskProject}
           onClose={() => setSelectedTaskId(null)}
           onUpdateTask={updateTask}
